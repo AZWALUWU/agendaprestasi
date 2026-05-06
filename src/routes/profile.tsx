@@ -152,7 +152,7 @@ function ContactCard() {
           rel="noopener noreferrer"
           className="group flex items-center gap-3 rounded-lg border border-border p-3 transition-all duration-150 hover:border-pink-300 hover:bg-pink-50 dark:hover:bg-pink-950/20"
         >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 text-white">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-purple-500 via-pink-500 to-orange-400 text-white">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
               <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
               <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
@@ -168,25 +168,6 @@ function ContactCard() {
           </div>
 
           <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground/50 group-hover:text-pink-500" />
-        </a>
-
-        {/* Email */}
-        <a
-          href="mailto:agendaprestasi.team@gmail.com"
-          className="group flex items-center gap-3 rounded-lg border border-border p-3 transition-all duration-150 hover:border-primary/40 hover:bg-primary/5"
-        >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Mail className="h-5 w-5" />
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-foreground">Email</p>
-            <p className="truncate text-xs text-muted-foreground group-hover:text-primary">
-              agendaprestasi.team@gmail.com
-            </p>
-          </div>
-
-          <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground/50 group-hover:text-primary" />
         </a>
 
         {/* Install PWA */}

@@ -14,7 +14,7 @@ const NAV_LINKS = [
   { to: "/?category=scholarship", label: "Beasiswa", icon: GraduationCap, matchParam: "scholarship" },
   { to: "/?category=competition", label: "Lomba", icon: Trophy, matchParam: "competition" },
   { to: "/?category=event", label: "Event", icon: Zap, matchParam: "event" },
-  { to: "/tryout", label: "Tryout SNBT", icon: FileText, matchExact: false },
+  { to: "/tryout", label: "TES UTBK", icon: FileText, matchExact: false },
   { to: "/calendar", label: "Kalender", icon: Calendar, matchExact: false },
 ] as const;
 
@@ -59,6 +59,7 @@ export function Navbar() {
 
   const handleNavClick = (link: typeof NAV_LINKS[number]) => {
     setMobileOpen(false);
+
     if ("matchParam" in link && link.matchParam) {
       navigate({ to: "/", search: { category: link.matchParam } });
       return;
@@ -67,6 +68,7 @@ export function Navbar() {
       navigate({ to: "/" });
       return;
     }
+    navigate({ to: link.to });
   };
 
   const handleLogout = async () => {
@@ -106,11 +108,10 @@ export function Navbar() {
                   <Link
                     key={link.label}
                     to="/calendar"
-                    className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      active
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${active
                         ? "text-primary border-b-2 border-primary"
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                    }`}
+                      }`}
                   >
                     {link.label}
                     {!user && <Lock className="h-3 w-3" aria-label="Perlu login" />}
@@ -121,11 +122,10 @@ export function Navbar() {
                 <button
                   key={link.label}
                   onClick={() => handleNavClick(link)}
-                  className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    active
+                  className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${active
                       ? "text-primary border-b-2 border-primary"
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                  }`}
+                    }`}
                 >
                   {link.label}
                 </button>
@@ -185,20 +185,18 @@ export function Navbar() {
 
       {/* Mobile drawer */}
       <div
-        className={`fixed left-0 right-0 top-16 z-50 overflow-hidden border-b bg-card shadow-md transition-all duration-200 ease-in-out ${
-          mobileOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0 border-b-0"
-        } md:hidden`}
+        className={`fixed left-0 right-0 top-16 z-50 overflow-hidden border-b bg-card shadow-md transition-all duration-200 ease-in-out ${mobileOpen ? "max-h-full opacity-100" : "max-h-0 opacity-0 border-b-0"
+          } md:hidden`}
       >
         <div className="flex flex-col">
           {NAV_LINKS.map((link) => {
             const active = isLinkActive(link);
             const Icon = link.icon;
 
-            const commonClass = `flex items-center gap-3 border-b border-border/30 px-6 py-4 text-base font-medium transition-colors ${
-              active
+            const commonClass = `flex items-center gap-3 border-b border-border/30 px-6 py-4 text-base font-medium transition-colors ${active
                 ? "bg-primary/5 text-primary border-l-[3px] border-l-primary"
                 : "text-foreground hover:bg-secondary"
-            }`;
+              }`;
 
             if (link.to === "/calendar") {
               return (
@@ -240,12 +238,12 @@ export function Navbar() {
                 </div>
 
                 <button
-                    onClick={handleProfile}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-secondary"
-                  >
-                    <User className="h-4 w-4" />
-                    Profil Saya
-                  </button>
+                  onClick={handleProfile}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-secondary"
+                >
+                  <User className="h-4 w-4" />
+                  Profil Saya
+                </button>
 
                 {hasAdminAccess && (
                   <button

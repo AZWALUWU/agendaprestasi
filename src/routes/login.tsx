@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@frontend/hooks/use-auth";
-import { lovable } from "@/integrations/lovable";
 import { supabase } from "@backend/supabase/client";
 import { Button } from "@frontend/components/ui/button";
 
@@ -15,10 +14,7 @@ function LoginPage() {
   const { user, loading } = useAuth();
   const [pending, setPending] = useState(false);
 
-  const isLocalhost =
-    typeof window !== "undefined" &&
-    ["localhost", "127.0.0.1"].includes(window.location.hostname);
-
+  // Redirect jika sudah login
   useEffect(() => {
     if (!loading && user) {
       navigate({ to: "/" });
@@ -27,44 +23,31 @@ function LoginPage() {
 
   const handleGoogleLogin = async () => {
     setPending(true);
+
     try {
-      if (isLocalhost) {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            redirectTo: `${window.location.origin}/auth/callback`,
-            queryParams: { prompt: "select_account" },
+      const origin =
+        typeof window !== "undefined" ? window.location.origin : "";
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${origin}/auth/callback`,
+          queryParams: {
+            prompt: "select_account",
           },
-        });
-
-        if (error) {
-          toast.error("Gagal masuk dengan Google");
-          setPending(false);
-        }
-
-        return;
-      }
-
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
-        extraParams: { prompt: "select_account" },
+        },
       });
 
-      if (result.error) {
+      if (error) {
+        console.error("OAuth error:", error);
         toast.error("Gagal masuk dengan Google");
         setPending(false);
-        return;
       }
 
-      if (result.redirected) {
-        // browser is redirecting to Google
-        return;
-      }
-
-      // tokens received, session set
-      navigate({ to: "/" });
-    } catch {
-      toast.error("Gagal masuk dengan Google");
+      // Tidak perlu navigate karena akan redirect ke Google
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      toast.error("Terjadi kesalahan");
       setPending(false);
     }
   };
@@ -86,7 +69,9 @@ function LoginPage() {
 
         {/* Card */}
         <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-          <h2 className="text-lg font-semibold text-foreground">Masuk ke Akun</h2>
+          <h2 className="text-lg font-semibold text-foreground">
+            Masuk ke Akun
+          </h2>
           <p className="text-sm text-muted-foreground">
             Simpan beasiswa &amp; lomba favoritmu
           </p>
@@ -97,7 +82,6 @@ function LoginPage() {
             variant="outline"
             className="w-full gap-3 py-5 text-sm font-medium"
           >
-            {/* Google icon */}
             <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
@@ -123,7 +107,9 @@ function LoginPage() {
         {/* Fine print */}
         <p className="mt-6 text-xs text-muted-foreground">
           Dengan masuk, kamu menyetujui{" "}
-          <span className="underline cursor-pointer">Syarat &amp; Ketentuan</span>{" "}
+          <span className="underline cursor-pointer">
+            Syarat &amp; Ketentuan
+          </span>{" "}
           kami
         </p>
       </div>

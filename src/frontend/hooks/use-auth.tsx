@@ -27,50 +27,76 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
-  const [isClient, setIsClient] = useState(false);
+
   const initializedRef = useRef(false);
 
-  // Mark client-side hydration complete (avoid SSR mismatch)
   useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isClient) return;
-
     let cancelled = false;
+    let subscription: any = null;
 
-    // STEP 1: Read session from localStorage synchronously (fast path)
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (cancelled) return;
-      setSession(session);
-      if (session?.user?.id) {
-        const userRole = await getUserRole(session.user.id);
-        if (!cancelled) setRole(userRole);
+    const initAuth = async () => {
+      try {
+        // STEP 1: Get session (fast, from localStorage/cookie)
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (cancelled) return;
+
+        if (error) {
+          console.error("Supabase getSession error:", error);
+        }
+
+        setSession(session);
+
+        // STEP 2: Fetch role if user exists
+        if (session?.user?.id) {
+          try {
+            const userRole = await getUserRole(session.user.id);
+            if (!cancelled) setRole(userRole);
+          } catch (roleErr) {
+            console.error("Error fetching user role:", roleErr);
+            if (!cancelled) setRole(null);
+          }
+        }
+
+      } catch (err) {
+        console.error("Critical Auth Initialization Error:", err);
+      } finally {
+        // IMPORTANT: always release loading
+        if (!cancelled) {
+          setLoading(false);
+          initializedRef.current = true;
+        }
       }
-      setLoading(false); // ← gate opens once initial session resolved
-      initializedRef.current = true;
-    });
 
-    // STEP 2: Listen for subsequent auth changes (login/logout/token refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
-      // Skip the very first event if getSession() already handled it
-      if (!initializedRef.current) return;
+      // STEP 3: Listen to auth changes
+      const { data } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+        // Skip duplicate initial fire
+        if (!initializedRef.current) return;
 
-      setSession(newSession);
-      if (newSession?.user?.id) {
-        const userRole = await getUserRole(newSession.user.id);
-        setRole(userRole);
-      } else {
-        setRole(null);
-      }
-      setLoading(false);
-    });
+        setSession(newSession);
 
-    // Safety timeout: never let the app stay stuck loading
+        if (newSession?.user?.id) {
+          try {
+            const userRole = await getUserRole(newSession.user.id);
+            setRole(userRole);
+          } catch (roleErr) {
+            console.error("Error fetching role on state change:", roleErr);
+            setRole(null);
+          }
+        } else {
+          setRole(null);
+        }
+      });
+
+      subscription = data.subscription;
+    };
+
+    initAuth();
+
+    // SAFETY: fallback jika sesuatu hang
     const timeout = setTimeout(() => {
       if (!initializedRef.current) {
-        console.warn("Auth session timeout — forcing gate open");
+        console.warn("Auth timeout — forcing loading false");
         setLoading(false);
         initializedRef.current = true;
       }
@@ -78,10 +104,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
-      subscription.unsubscribe();
+      if (subscription) subscription.unsubscribe();
       clearTimeout(timeout);
     };
-  }, [isClient]);
+  }, []);
 
   const user = session?.user ?? null;
   const isAdmin = role === "admin" || role === "super_admin";
@@ -89,7 +115,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAuthenticated = !loading && session !== null;
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, isSuperAdmin, role, loading, isAuthenticated }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        role,
+        isAdmin,
+        isSuperAdmin,
+        loading,
+        isAuthenticated,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
