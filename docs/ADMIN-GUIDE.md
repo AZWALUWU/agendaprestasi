@@ -2,15 +2,15 @@
 
 ## Role yang tersedia
 
-| Role | Akses |
-|---|---|
+| Role          | Akses                               |
+| ------------- | ----------------------------------- |
 | `super_admin` | Kelola semua post + kelola role tim |
-| `admin` | Kelola post milik sendiri saja |
+| `admin`       | Kelola post milik sendiri saja      |
 
 ## Cara menambah anggota tim baru (Google Auth)
 
 1. Minta anggota login ke aplikasi menggunakan akun Google mereka (sekali saja)
-2. Buka Lovable Cloud → Database → SQL Editor
+2. Buka Supabase Cloud → Database → SQL Editor
 3. Jalankan query INSERT di `docs/admin-management.sql`
 4. Verifikasi dengan query SELECT
 

@@ -1,13 +1,3 @@
--- =====================================================
--- ADMIN MANAGEMENT QUERIES (Google Auth)
--- Jalankan di Lovable Cloud → Database → SQL Editor
--- =====================================================
-
--- PENTING: Anggota tim HARUS login via Google di aplikasi
--- terlebih dahulu (minimal sekali) sebelum bisa ditambahkan
--- sebagai admin, karena user_id mereka harus terdaftar
--- di auth.users dulu.
-
 -- 1. Tambah Super Admin pertama (setelah login via Google)
 INSERT INTO user_roles (user_id, email, role)
 SELECT id, email, 'super_admin'
