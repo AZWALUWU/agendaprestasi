@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "@frontend/hooks/use-auth";
 import { Button } from "@frontend/components/ui/button";
 import { Input } from "@frontend/components/ui/input";
 import { Label } from "@frontend/components/ui/label";
@@ -35,13 +36,16 @@ export function PostForm({ initialData, onSubmit, loading }: PostFormProps) {
     if (autoSlug) setSlug(slugify(title));
   }, [title, autoSlug]);
 
+  const { user } = useAuth();
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) { toast.error("Ukuran file maksimal 5MB"); return; }
     setUploading(true);
     try {
-      const url = await uploadPostImage(file);
+      if (!user?.id) throw new Error("Not authenticated");
+      const url = await uploadPostImage(file, user.id);
       setImageUrl(url);
       toast.success("Gambar berhasil diupload");
     } catch (err: any) {

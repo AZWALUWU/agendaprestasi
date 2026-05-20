@@ -15,7 +15,10 @@ function NewPostPage() {
   const { user } = useAuth();
 
   const mutation = useMutation({
-    mutationFn: (data: PostInsert) => createPost({ ...data, author_id: user?.id }),
+    mutationFn: (data: PostInsert) => {
+      if (!user?.id) throw new Error("Not authenticated");
+      return createPost({ ...data, author_id: user.id }, user.id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-posts"] });
       toast.success("Post berhasil dibuat!");

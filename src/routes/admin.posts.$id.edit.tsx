@@ -47,7 +47,8 @@ function EditPostPage() {
       if (!can.editPost(currentRole, post?.author_id ?? null, currentUserId)) {
         throw new Error("Kamu hanya bisa mengedit post milikmu sendiri.");
       }
-      return updatePost(id, data);
+      if (!currentUserId) throw new Error("Not authenticated");
+      return updatePost(id, data, currentUserId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-posts"] });

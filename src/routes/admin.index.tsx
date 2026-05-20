@@ -25,7 +25,8 @@ function AdminPostsPage() {
 
   const { data: posts, isLoading } = useQuery({
     queryKey: ["admin-posts"],
-    queryFn: fetchAllPosts,
+    queryFn: () => fetchAllPosts(currentUserId),
+    enabled: !!user?.id && !roleLoading && (currentRole === "admin" || currentRole === "super_admin"),
   });
 
   const deleteMutation = useMutation({
@@ -35,7 +36,8 @@ function AdminPostsPage() {
       if (!can.deletePost(currentRole, authorId, currentUserId)) {
         throw new Error("Kamu hanya bisa menghapus post milikmu sendiri.");
       }
-      return deletePost(id);
+      if (!currentUserId) throw new Error("Not authenticated");
+      return deletePost(id, currentUserId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-posts"] });
@@ -52,7 +54,8 @@ function AdminPostsPage() {
       if (!can.publishPost(currentRole, authorId, currentUserId)) {
         throw new Error("Kamu hanya bisa mengubah status post milikmu sendiri.");
       }
-      return togglePostStatus(id, status);
+      if (!currentUserId) throw new Error("Not authenticated");
+      return togglePostStatus(id, status, currentUserId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-posts"] });

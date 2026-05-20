@@ -1,5 +1,6 @@
 import { supabase } from "@backend/supabase/client";
 import type { Database } from "@backend/supabase/types";
+import { requireAdmin } from "@backend/auth/admin-middleware";
 
 export type Post = Database["public"]["Tables"]["posts"]["Row"];
 export type PostInsert = Database["public"]["Tables"]["posts"]["Insert"];
@@ -22,35 +23,42 @@ export async function fetchPostBySlug(slug: string) {
 }
 
 // Admin queries
-export async function fetchAllPosts() {
+export async function fetchAllPosts(userId: string) {
+  await requireAdmin(userId);
   const { data, error } = await supabase.from("posts").select("*").order("created_at", { ascending: false });
   if (error) throw error;
   return data;
 }
 
-export async function createPost(post: PostInsert & { author_id?: string }) {
-  const { data, error } = await supabase.from("posts").insert(post).select().single();
+export async function createPost(post: PostInsert & { author_id?: string }, userId: string) {
+  await requireAdmin(userId);
+  const toInsert = { ...post, author_id: post.author_id ?? userId };
+  const { data, error } = await supabase.from("posts").insert(toInsert).select().single();
   if (error) throw error;
   return data;
 }
 
-export async function updatePost(id: string, post: PostUpdate) {
+export async function updatePost(id: string, post: PostUpdate, userId: string) {
+  await requireAdmin(userId);
   const { data, error } = await supabase.from("posts").update(post).eq("id", id).select().single();
   if (error) throw error;
   return data;
 }
 
-export async function deletePost(id: string) {
+export async function deletePost(id: string, userId: string) {
+  await requireAdmin(userId);
   const { error } = await supabase.from("posts").delete().eq("id", id);
   if (error) throw error;
 }
 
-export async function togglePostStatus(id: string, currentStatus: string) {
+export async function togglePostStatus(id: string, currentStatus: string, userId: string) {
+  await requireAdmin(userId);
   const newStatus = currentStatus === "published" ? "draft" : "published";
-  return updatePost(id, { status: newStatus });
+  return updatePost(id, { status: newStatus } as PostUpdate, userId);
 }
 
-export async function uploadPostImage(file: File) {
+export async function uploadPostImage(file: File, userId: string) {
+  await requireAdmin(userId);
   const ext = file.name.split(".").pop();
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
   const { error } = await supabase.storage.from("post-images").upload(fileName, file);
