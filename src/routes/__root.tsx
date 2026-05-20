@@ -30,17 +30,27 @@ function NotFoundComponent() {
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Agenda Prestasi — Beasiswa & Lomba" },
-      { name: "description", content: "Temukan beasiswa dan lomba terbaru untuk mahasiswa dan pelajar Indonesia." },
-      { property: "og:title", content: "Agenda Prestasi — Beasiswa & Lomba" },
-      { property: "og:description", content: "Platform pencarian beasiswa dan kompetisi terbaru." },
-      { property: "og:type", content: "website" },
-    ],
-    links: [{ rel: "stylesheet", href: appCss }],
-  }),
+  meta: [
+    { charSet: "utf-8" },
+    { name: "viewport", content: "width=device-width, initial-scale=1" },
+    { title: "Agenda Prestasi — Beasiswa & Lomba" },
+    { name: "description", content: "Temukan beasiswa dan lomba terbaru untuk mahasiswa dan pelajar Indonesia." },
+    { property: "og:title", content: "Agenda Prestasi — Beasiswa & Lomba" },
+    { property: "og:description", content: "Platform pencarian beasiswa dan kompetisi terbaru." },
+    { property: "og:type", content: "website" },
+    { property: "og:image", content: "/agendaprestasi.png" },
+    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:image", content: "/agendaprestasi.png" },
+  ],
+  links: [
+    { rel: "stylesheet", href: appCss },
+    { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
+    { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+    { rel: "icon", type: "image/png", sizes: "96x96", href: "/favicon-96x96.png" },
+    { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
+    { rel: "manifest", href: "/site.webmanifest" },
+  ],
+}),
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
