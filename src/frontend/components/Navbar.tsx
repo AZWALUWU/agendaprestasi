@@ -14,7 +14,7 @@ const NAV_LINKS = [
   { to: "/?category=scholarship", label: "Beasiswa", icon: GraduationCap, matchParam: "scholarship" },
   { to: "/?category=competition", label: "Lomba", icon: Trophy, matchParam: "competition" },
   { to: "/?category=event", label: "Event", icon: Zap, matchParam: "event" },
-  { to: "/tryout", label: "TES UTBK", icon: FileText, matchExact: false },
+  //{ to: "/tryout", label: "TES UTBK", icon: FileText, matchExact: false },
   { to: "/calendar", label: "Kalender", icon: Calendar, matchExact: false },
 ] as const;
 
@@ -47,7 +47,7 @@ export function Navbar() {
 
   const isLinkActive = (link: typeof NAV_LINKS[number]) => {
     if (link.to === "/calendar") return location.pathname === "/calendar";
-    if (link.to === "/tryout") return location.pathname.startsWith("/tryout");
+    //if (link.to === "/tryout") return location.pathname.startsWith("/tryout");
     if ("matchParam" in link && link.matchParam) {
       return location.pathname === "/" && location.searchStr?.includes(`category=${link.matchParam}`);
     }

@@ -51,12 +51,18 @@ function AdminLayout() {
             <Link to="/admin" className="flex items-center gap-1.5 rounded-lg px-2 sm:px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary">
               <LayoutDashboard className="h-4 w-4" /> <span className="hidden sm:inline">Posts</span>
             </Link>
-            <Link to="/admin/questions" className="flex items-center gap-1.5 rounded-lg px-2 sm:px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary">
+
+            {/*Add more admin menu items here, tryout and question bank are examples, delete if not needed: */}
+
+            {/*<Link to="/admin/questions" className="flex items-center gap-1.5 rounded-lg px-2 sm:px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary">
               <FileQuestion className="h-4 w-4" /> <span className="hidden sm:inline">Bank Soal</span>
             </Link>
             <Link to="/admin/tryouts" className="flex items-center gap-1.5 rounded-lg px-2 sm:px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary">
               <ClipboardList className="h-4 w-4" /> <span className="hidden sm:inline">Event Tryout</span>
-            </Link>
+            </Link>*/}
+
+             {/*delete above if not needed, tryout and question bank pages are not implemented yet, will be added in the future if needed*/}
+
             <Button variant="ghost" size="sm" onClick={async () => { await signOut(); navigate({ to: "/" }); }}>
               <LogOut className="mr-1 h-4 w-4" /> Keluar
             </Button>
