@@ -14,6 +14,15 @@ export const Route = createFileRoute("/admin/posts/$id/edit")({
   component: EditPostPage,
 });
 
+async function getSessionSafe() {
+  const timeout = new Promise<null>((resolve) =>
+    setTimeout(() => resolve(null), 5000)
+  );
+  const sessionPromise = supabase.auth.getSession().then((r) => r.data.session);
+  const session = await Promise.race([sessionPromise, timeout]);
+  return session;
+}
+
 function EditPostPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
@@ -32,7 +41,6 @@ function EditPostPage() {
     },
   });
 
-  // Guard: redirect if no permission to edit this post
   useEffect(() => {
     if (!isLoading && !roleLoading && post) {
       if (!can.editPost(currentRole, post.author_id, currentUserId)) {
@@ -43,15 +51,21 @@ function EditPostPage() {
   }, [isLoading, roleLoading, post, currentRole, currentUserId, navigate]);
 
   const mutation = useMutation({
-    mutationFn: (data: PostUpdate) => {
+    mutationFn: async (data: PostUpdate) => {
       if (!can.editPost(currentRole, post?.author_id ?? null, currentUserId)) {
         throw new Error("Kamu hanya bisa mengedit post milikmu sendiri.");
       }
       if (!currentUserId) throw new Error("Not authenticated");
+
+      const session = await getSessionSafe();
+      if (!session) {
+        throw new Error("Sesi tidak ditemukan atau timeout — silakan login ulang");
+      }
+
       return updatePost(id, data, currentUserId);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-posts"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-posts"] });
       toast.success("Post berhasil diperbarui!");
       navigate({ to: "/admin" });
     },
@@ -59,7 +73,12 @@ function EditPostPage() {
   });
 
   if (isLoading || roleLoading) {
-    return <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-64 w-full" /></div>;
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
   }
 
   if (!post) {

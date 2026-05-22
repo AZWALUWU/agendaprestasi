@@ -27,73 +27,90 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
-
   const initializedRef = useRef(false);
+  const roleLoadingRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
-    let subscription: any = null;
 
-    const initAuth = async () => {
+    const fetchAndSetRole = async (userId: string) => {
+      if (roleLoadingRef.current) return;
+      roleLoadingRef.current = true;
       try {
-        // STEP 1: Get session (fast, from localStorage/cookie)
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const userRole = await getUserRole(userId);
+        if (!cancelled) setRole(userRole);
+      } catch (err) {
+        console.error("Error fetching role:", err);
+        if (!cancelled) setRole(null);
+      } finally {
+        roleLoadingRef.current = false;
+      }
+    };
 
+    // STEP 1: Pasang listener pertama
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, newSession) => {
+        if (!initializedRef.current) return;
         if (cancelled) return;
 
-        if (error) {
-          console.error("Supabase getSession error:", error);
+        setSession(newSession);
+
+        if (newSession?.user?.id) {
+          await fetchAndSetRole(newSession.user.id);
+        } else {
+          setRole(null);
         }
+      }
+    );
+
+    // STEP 2: Init session
+    const initAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (cancelled) return;
+        if (error) console.error("getSession error:", error);
 
         setSession(session);
 
-        // STEP 2: Fetch role if user exists
         if (session?.user?.id) {
-          try {
-            const userRole = await getUserRole(session.user.id);
-            if (!cancelled) setRole(userRole);
-          } catch (roleErr) {
-            console.error("Error fetching user role:", roleErr);
-            if (!cancelled) setRole(null);
-          }
+          await fetchAndSetRole(session.user.id);
         }
-
       } catch (err) {
-        console.error("Critical Auth Initialization Error:", err);
+        console.error("Auth init error:", err);
       } finally {
-        // IMPORTANT: always release loading
         if (!cancelled) {
           setLoading(false);
           initializedRef.current = true;
         }
       }
-
-      // STEP 3: Listen to auth changes
-      const { data } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
-        // Skip duplicate initial fire
-        if (!initializedRef.current) return;
-
-        setSession(newSession);
-
-        if (newSession?.user?.id) {
-          try {
-            const userRole = await getUserRole(newSession.user.id);
-            setRole(userRole);
-          } catch (roleErr) {
-            console.error("Error fetching role on state change:", roleErr);
-            setRole(null);
-          }
-        } else {
-          setRole(null);
-        }
-      });
-
-      subscription = data.subscription;
     };
 
     initAuth();
 
-    // SAFETY: fallback jika sesuatu hang
+    // STEP 3: Re-sync session ketika tab kembali aktif
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState !== "visible") return;
+      if (!initializedRef.current) return;
+      if (cancelled) return;
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!cancelled) {
+          setSession(session);
+          if (session?.user?.id) {
+            await fetchAndSetRole(session.user.id);
+          } else {
+            setRole(null);
+          }
+        }
+      } catch (err) {
+        console.error("Visibility re-sync error:", err);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Safety timeout
     const timeout = setTimeout(() => {
       if (!initializedRef.current) {
         console.warn("Auth timeout — forcing loading false");
@@ -104,7 +121,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
-      if (subscription) subscription.unsubscribe();
+      subscription.unsubscribe();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       clearTimeout(timeout);
     };
   }, []);

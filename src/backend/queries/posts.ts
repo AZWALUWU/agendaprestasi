@@ -31,10 +31,27 @@ export async function fetchAllPosts(userId: string) {
 }
 
 export async function createPost(post: PostInsert & { author_id?: string }, userId: string) {
+  console.log("createPost START");
   await requireAdmin(userId);
+  console.log("requireAdmin DONE");
+
   const toInsert = { ...post, author_id: post.author_id ?? userId };
-  const { data, error } = await supabase.from("posts").insert(toInsert).select().single();
+  const payloadSize = new Blob([JSON.stringify(toInsert)]).size;
+  console.log("Payload size:", (payloadSize / 1024).toFixed(2), "KB");
+
+  const { data, error } = await supabase
+    .from("posts")
+    .insert(toInsert)
+    .select()
+    .single();
+
+  console.log("Insert result:", { data, error });
+
   if (error) throw error;
+  if (!data) throw new Error(
+    "Post gagal dibuat — RLS policy memblokir insert. Pastikan session masih aktif."
+  );
+
   return data;
 }
 
@@ -42,6 +59,9 @@ export async function updatePost(id: string, post: PostUpdate, userId: string) {
   await requireAdmin(userId);
   const { data, error } = await supabase.from("posts").update(post).eq("id", id).select().single();
   if (error) throw error;
+  if (!data) throw new Error(
+    "Post gagal diperbarui — RLS policy memblokir update. Pastikan kamu adalah pemilik post ini."
+  );
   return data;
 }
 
