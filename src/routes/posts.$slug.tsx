@@ -18,10 +18,7 @@ export const Route = createFileRoute("/posts/$slug")({
   beforeLoad: async ({ location }) => {
     const { data } = await supabase.auth.getSession();
     if (!data.session) {
-      throw redirect({
-        to: "/login",
-        search: { redirect: location.href },
-      });
+      throw redirect({ to: "/login", search: { redirect: location.href } });
     }
   },
   component: PostDetailPage,
@@ -37,10 +34,13 @@ const deadlineClasses: Record<string, string> = {
 function PostDetailPage() {
   const { slug } = Route.useParams();
   const { loading: authLoading } = useAuth();
+
   const { data: post, isLoading, error } = useQuery({
     queryKey: ["post", slug],
     queryFn: () => fetchPostBySlug(slug),
     enabled: !authLoading,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   });
 
   if (isLoading) {
@@ -76,7 +76,6 @@ function PostDetailPage() {
   const postStatus = getPostStatus(post);
   const categoryConfig = getCategoryConfig(post.category);
 
-  // Sanitize HTML content sebelum dirender
   const safeContent = post.content
     ? DOMPurify.sanitize(post.content, {
         ALLOWED_TAGS: [
@@ -86,8 +85,7 @@ function PostDetailPage() {
           "a", "img",
           "table", "thead", "tbody", "tr", "th", "td",
           "blockquote", "pre", "code",
-          "div", "span",
-          "hr",
+          "div", "span", "hr",
         ],
         ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "class", "style"],
       })
@@ -127,9 +125,7 @@ function PostDetailPage() {
             {categoryConfig.label}
           </span>
           {post.deadline && (
-            <span
-              className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${deadlineClasses[deadlineStatus]}`}
-            >
+            <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${deadlineClasses[deadlineStatus]}`}>
               <Calendar className="h-3 w-3" />
               {formatDeadline(post.deadline)}
             </span>

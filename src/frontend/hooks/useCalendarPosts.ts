@@ -3,7 +3,6 @@ import { supabase } from "@backend/supabase/client";
 import { useAuth } from "@frontend/hooks/use-auth";
 
 export function useCalendarPosts(year: number, month: number) {
-  // Public data, but wait for auth so RLS evaluates with the right session
   const { loading: authLoading } = useAuth();
 
   return useQuery({
@@ -24,5 +23,7 @@ export function useCalendarPosts(year: number, month: number) {
       return data;
     },
     enabled: !authLoading,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   });
 }

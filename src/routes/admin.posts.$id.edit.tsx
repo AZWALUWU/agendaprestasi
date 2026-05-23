@@ -19,8 +19,7 @@ async function getSessionSafe() {
     setTimeout(() => resolve(null), 5000)
   );
   const sessionPromise = supabase.auth.getSession().then((r) => r.data.session);
-  const session = await Promise.race([sessionPromise, timeout]);
-  return session;
+  return Promise.race([sessionPromise, timeout]);
 }
 
 function EditPostPage() {
@@ -35,10 +34,16 @@ function EditPostPage() {
   const { data: post, isLoading } = useQuery({
     queryKey: ["admin-post", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("posts").select("*").eq("id", id).single();
+      const { data, error } = await supabase
+        .from("posts")
+        .select("*")
+        .eq("id", id)
+        .single();
       if (error) throw error;
       return data;
     },
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   useEffect(() => {
@@ -56,16 +61,13 @@ function EditPostPage() {
         throw new Error("Kamu hanya bisa mengedit post milikmu sendiri.");
       }
       if (!currentUserId) throw new Error("Not authenticated");
-
       const session = await getSessionSafe();
-      if (!session) {
-        throw new Error("Sesi tidak ditemukan atau timeout — silakan login ulang");
-      }
-
+      if (!session) throw new Error("Sesi tidak ditemukan atau timeout — silakan login ulang");
       return updatePost(id, data, currentUserId);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin-posts"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-post", id] });
       toast.success("Post berhasil diperbarui!");
       navigate({ to: "/admin" });
     },
@@ -92,7 +94,11 @@ function EditPostPage() {
   return (
     <div>
       <h1 className="mb-6 text-2xl font-bold">Edit Post</h1>
-      <PostForm initialData={post} onSubmit={(data) => mutation.mutate(data)} loading={mutation.isPending} />
+      <PostForm
+        initialData={post}
+        onSubmit={(data) => mutation.mutate(data)}
+        loading={mutation.isPending}
+      />
     </div>
   );
 }

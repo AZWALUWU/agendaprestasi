@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { Search, Sparkles, X } from "lucide-react";
@@ -36,13 +36,14 @@ function HomePage() {
     queryKey: ["posts", category, debouncedSearch],
     queryFn: () => fetchPublishedPosts(category || undefined, debouncedSearch || undefined),
     enabled: !authLoading,
+    staleTime: 3 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      {/* Hero */}
       <section className="border-b bg-card px-4 py-12 text-center md:py-20">
         <div className="mx-auto max-w-2xl">
           <h1 className="text-3xl font-extrabold tracking-tight text-foreground md:text-5xl">
@@ -63,7 +64,10 @@ function HomePage() {
               className="w-full rounded-full border bg-background py-3 pl-12 pr-10 text-sm shadow-sm outline-none ring-1 ring-transparent transition-all focus:ring-2 focus:ring-primary"
             />
             {search && (
-              <button onClick={() => setSearch("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
                 <X className="h-4 w-4" />
               </button>
             )}
@@ -71,7 +75,6 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Post Grid */}
       <section className="mx-auto max-w-6xl px-4 py-8">
         {isLoading ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -90,7 +93,9 @@ function HomePage() {
             <Sparkles className="mb-4 h-12 w-12 text-muted-foreground/40" />
             <h3 className="text-lg font-semibold text-muted-foreground">Belum ada postingan</h3>
             <p className="mt-1 text-sm text-muted-foreground/70">
-              {search ? "Tidak ditemukan hasil untuk pencarian kamu." : "Nantikan beasiswa, lomba, dan event terbaru."}
+              {search
+                ? "Tidak ditemukan hasil untuk pencarian kamu."
+                : "Nantikan beasiswa, lomba, dan event terbaru."}
             </p>
           </div>
         )}

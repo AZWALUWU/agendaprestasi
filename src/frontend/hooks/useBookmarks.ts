@@ -19,6 +19,7 @@ export function useBookmarkedIds() {
     },
     enabled: !authLoading && !!user,
     staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 }
 
@@ -45,6 +46,8 @@ export function useBookmarkedPosts() {
       return (data ?? []).filter((b) => b.post !== null);
     },
     enabled: !authLoading && !!user,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 }
 

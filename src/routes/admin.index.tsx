@@ -27,6 +27,8 @@ function AdminPostsPage() {
     queryKey: ["admin-posts"],
     queryFn: () => fetchAllPosts(currentUserId),
     enabled: !!user?.id && !roleLoading && (currentRole === "admin" || currentRole === "super_admin"),
+    staleTime: 1 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 
   const deleteMutation = useMutation({
@@ -128,7 +130,9 @@ function AdminPostsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        post.status === "published" ? "bg-deadline-green text-deadline-green-foreground" : "bg-deadline-gray text-deadline-gray-foreground"
+                        post.status === "published"
+                          ? "bg-deadline-green text-deadline-green-foreground"
+                          : "bg-deadline-gray text-deadline-gray-foreground"
                       }`}>
                         {post.status === "published" ? "Published" : "Draft"}
                       </span>
@@ -153,7 +157,11 @@ function AdminPostsPage() {
                               </button>
                             )}
                             {canEdit && (
-                              <Link to="/admin/posts/$id/edit" params={{ id: post.id }} className="rounded-lg p-2 text-muted-foreground hover:bg-secondary hover:text-foreground">
+                              <Link
+                                to="/admin/posts/$id/edit"
+                                params={{ id: post.id }}
+                                className="rounded-lg p-2 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                              >
                                 <Pencil className="h-4 w-4" />
                               </Link>
                             )}
@@ -184,7 +192,11 @@ function AdminPostsPage() {
             <p className="mt-2 text-sm text-muted-foreground">Tindakan ini tidak bisa dibatalkan.</p>
             <div className="mt-4 flex justify-end gap-2">
               <Button variant="outline" onClick={() => setDeleteId(null)}>Batal</Button>
-              <Button variant="destructive" onClick={() => deleteMutation.mutate(deleteId)} disabled={deleteMutation.isPending}>
+              <Button
+                variant="destructive"
+                onClick={() => deleteMutation.mutate(deleteId)}
+                disabled={deleteMutation.isPending}
+              >
                 {deleteMutation.isPending ? "Menghapus..." : "Hapus"}
               </Button>
             </div>
