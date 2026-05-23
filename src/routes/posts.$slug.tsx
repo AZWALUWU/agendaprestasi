@@ -12,6 +12,7 @@ import { Button } from "@frontend/components/ui/button";
 import { Skeleton } from "@frontend/components/ui/skeleton";
 import { Navbar } from "@frontend/components/Navbar";
 import { useAuth } from "@frontend/hooks/use-auth";
+import DOMPurify from "dompurify";
 
 export const Route = createFileRoute("/posts/$slug")({
   beforeLoad: async ({ location }) => {
@@ -63,7 +64,9 @@ function PostDetailPage() {
         <Navbar />
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <h2 className="text-xl font-semibold">Post tidak ditemukan</h2>
-          <Link to="/" className="mt-4 text-primary hover:underline">Kembali ke Beranda</Link>
+          <Link to="/" className="mt-4 text-primary hover:underline">
+            Kembali ke Beranda
+          </Link>
         </div>
       </div>
     );
@@ -73,17 +76,42 @@ function PostDetailPage() {
   const postStatus = getPostStatus(post);
   const categoryConfig = getCategoryConfig(post.category);
 
+  // Sanitize HTML content sebelum dirender
+  const safeContent = post.content
+    ? DOMPurify.sanitize(post.content, {
+        ALLOWED_TAGS: [
+          "p", "br", "strong", "b", "em", "i", "u", "s",
+          "h1", "h2", "h3", "h4", "h5", "h6",
+          "ul", "ol", "li",
+          "a", "img",
+          "table", "thead", "tbody", "tr", "th", "td",
+          "blockquote", "pre", "code",
+          "div", "span",
+          "hr",
+        ],
+        ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "class", "style"],
+      })
+    : null;
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <article className="mx-auto max-w-3xl px-4 py-8">
-        <Link to="/" className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <Link
+          to="/"
+          className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
           <ArrowLeft className="h-4 w-4" /> Kembali
         </Link>
 
         {post.image_url && (
           <div className="relative mb-8 overflow-hidden rounded-xl">
-            <img src={post.image_url} alt={post.title} className="w-full object-cover" style={{ maxHeight: 400 }} />
+            <img
+              src={post.image_url}
+              alt={post.title}
+              className="w-full object-cover"
+              style={{ maxHeight: 400 }}
+            />
             <StatusBadge status={postStatus} className="absolute top-3 right-3" />
           </div>
         )}
@@ -99,7 +127,9 @@ function PostDetailPage() {
             {categoryConfig.label}
           </span>
           {post.deadline && (
-            <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${deadlineClasses[deadlineStatus]}`}>
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${deadlineClasses[deadlineStatus]}`}
+            >
               <Calendar className="h-3 w-3" />
               {formatDeadline(post.deadline)}
             </span>
@@ -107,14 +137,21 @@ function PostDetailPage() {
           <BookmarkButton postId={post.id} variant="detail" />
         </div>
 
-        <h1 className="text-2xl font-bold text-foreground md:text-3xl">{post.title}</h1>
+        <h1 className="text-2xl font-bold text-foreground md:text-3xl">
+          {post.title}
+        </h1>
 
         {post.description && (
-          <p className="mt-4 text-muted-foreground leading-relaxed">{post.description}</p>
+          <p className="mt-4 text-muted-foreground leading-relaxed">
+            {post.description}
+          </p>
         )}
 
-        {post.content && (
-          <div className="prose mt-8 max-w-none text-foreground" dangerouslySetInnerHTML={{ __html: post.content }} />
+        {safeContent && (
+          <div
+            className="prose prose-neutral mt-8 max-w-none text-foreground"
+            dangerouslySetInnerHTML={{ __html: safeContent }}
+          />
         )}
 
         {post.link && (
