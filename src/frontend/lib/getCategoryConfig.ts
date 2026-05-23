@@ -3,6 +3,10 @@
 
 import { GraduationCap, Trophy, Zap, type LucideIcon } from "lucide-react";
 
+// ============================================================================
+// CATEGORY
+// ============================================================================
+
 export type Category = "scholarship" | "competition" | "event";
 
 export interface CategoryConfig {
@@ -71,6 +75,80 @@ export function getCategoryConfig(category: string): CategoryConfig {
       calendarPillClass: "bg-secondary text-foreground",
       filterLabel: category,
       emptyMessage: "Belum ada konten.",
+    }
+  );
+}
+
+// ============================================================================
+// TAGS
+// ============================================================================
+
+export type PostTag =
+  | "sma_smk"
+  | "s1"
+  | "s2_s3"
+  | "gratis"
+  | "bersertifikat"
+  | "fully_funded"
+  | "luar_negeri"
+  | "online";
+
+export const ALL_TAGS: PostTag[] = [
+  "sma_smk",
+  "s1",
+  "s2_s3",
+  "gratis",
+  "bersertifikat",
+  "fully_funded",
+  "luar_negeri",
+  "online",
+];
+
+export interface TagConfig {
+  label: string;
+  pillClass: string;
+}
+
+export const TAG_CONFIG: Record<PostTag, TagConfig> = {
+  sma_smk: {
+    label: "SMA/SMK",
+    pillClass: "bg-sky-100 text-sky-700 border border-sky-200",
+  },
+  s1: {
+    label: "S1",
+    pillClass: "bg-blue-100 text-blue-700 border border-blue-200",
+  },
+  s2_s3: {
+    label: "S2/S3",
+    pillClass: "bg-indigo-100 text-indigo-700 border border-indigo-200",
+  },
+  gratis: {
+    label: "Gratis",
+    pillClass: "bg-green-100 text-green-700 border border-green-200",
+  },
+  bersertifikat: {
+    label: "Bersertifikat",
+    pillClass: "bg-amber-100 text-amber-700 border border-amber-200",
+  },
+  fully_funded: {
+    label: "Fully Funded",
+    pillClass: "bg-emerald-100 text-emerald-700 border border-emerald-200",
+  },
+  luar_negeri: {
+    label: "Luar Negeri",
+    pillClass: "bg-purple-100 text-purple-700 border border-purple-200",
+  },
+  online: {
+    label: "Online",
+    pillClass: "bg-rose-100 text-rose-700 border border-rose-200",
+  },
+};
+
+export function getTagConfig(tag: string): TagConfig {
+  return (
+    TAG_CONFIG[tag as PostTag] ?? {
+      label: tag,
+      pillClass: "bg-secondary text-muted-foreground border border-border",
     }
   );
 }

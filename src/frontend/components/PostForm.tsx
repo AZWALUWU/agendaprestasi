@@ -6,7 +6,14 @@ import { Label } from "@frontend/components/ui/label";
 import { Textarea } from "@frontend/components/ui/textarea";
 import { slugify } from "@frontend/lib/helpers";
 import { uploadPostImage, type Post, type PostInsert } from "@backend/queries/posts";
-import { ALL_CATEGORIES, CATEGORY_CONFIG, type Category } from "@frontend/lib/getCategoryConfig";
+import {
+  ALL_CATEGORIES,
+  CATEGORY_CONFIG,
+  ALL_TAGS,
+  TAG_CONFIG,
+  type Category,
+  type PostTag,
+} from "@frontend/lib/getCategoryConfig";
 import { toast } from "sonner";
 import { Upload, Eye, Code } from "lucide-react";
 import DOMPurify from "dompurify";
@@ -25,9 +32,14 @@ export function PostForm({ initialData, onSubmit, loading }: PostFormProps) {
   const [category, setCategory] = useState<Category>(
     (initialData?.category as Category) ?? "scholarship"
   );
+  const [tags, setTags] = useState<PostTag[]>(
+    (initialData?.tags as PostTag[]) ?? []
+  );
   const [openDate, setOpenDate] = useState(initialData?.open_date ?? "");
   const [deadline, setDeadline] = useState(initialData?.deadline ?? "");
-  const [announcementDate, setAnnouncementDate] = useState(initialData?.announcement_date ?? "");
+  const [announcementDate, setAnnouncementDate] = useState(
+    initialData?.announcement_date ?? ""
+  );
   const [link, setLink] = useState(initialData?.link ?? "");
   const [imageUrl, setImageUrl] = useState(initialData?.image_url ?? "");
   const [uploading, setUploading] = useState(false);
@@ -40,10 +52,19 @@ export function PostForm({ initialData, onSubmit, loading }: PostFormProps) {
 
   const { user } = useAuth();
 
+  const handleTagToggle = (tag: PostTag) => {
+    setTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error("Ukuran file maksimal 5MB"); return; }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran file maksimal 5MB");
+      return;
+    }
     setUploading(true);
     try {
       if (!user?.id) throw new Error("Not authenticated");
@@ -66,6 +87,7 @@ export function PostForm({ initialData, onSubmit, loading }: PostFormProps) {
       description: description.trim() || null,
       content: content.trim() || null,
       category,
+      tags,
       open_date: openDate || null,
       deadline: deadline || null,
       announcement_date: announcementDate || null,
@@ -79,11 +101,9 @@ export function PostForm({ initialData, onSubmit, loading }: PostFormProps) {
     ALLOWED_TAGS: [
       "p", "br", "strong", "b", "em", "i", "u", "s",
       "h1", "h2", "h3", "h4", "h5", "h6",
-      "ul", "ol", "li",
-      "a", "img",
+      "ul", "ol", "li", "a", "img",
       "table", "thead", "tbody", "tr", "th", "td",
-      "blockquote", "pre", "code",
-      "div", "span", "hr",
+      "blockquote", "pre", "code", "div", "span", "hr",
     ],
     ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "class", "style"],
   });
@@ -122,6 +142,7 @@ export function PostForm({ initialData, onSubmit, loading }: PostFormProps) {
         />
       </div>
 
+      {/* Kategori */}
       <div className="space-y-2">
         <Label>Kategori *</Label>
         <div className="flex flex-wrap gap-4">
@@ -139,6 +160,43 @@ export function PostForm({ initialData, onSubmit, loading }: PostFormProps) {
             </label>
           ))}
         </div>
+      </div>
+
+      {/* Tags */}
+      <div className="space-y-2">
+        <Label>
+          Tags
+          <span className="ml-2 text-xs font-normal text-muted-foreground">
+            (Pilih semua yang sesuai)
+          </span>
+        </Label>
+        <div className="flex flex-wrap gap-2">
+          {ALL_TAGS.map((tag) => {
+            const config = TAG_CONFIG[tag];
+            const selected = tags.includes(tag);
+            return (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => handleTagToggle(tag)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-all border ${
+                  selected
+                    ? config.pillClass + " ring-2 ring-offset-1 ring-primary/50"
+                    : "bg-secondary text-muted-foreground border-border hover:bg-secondary/80"
+                }`}
+              >
+                {selected && <span className="mr-1">✓</span>}
+                {config.label}
+              </button>
+            );
+          })}
+        </div>
+        {tags.length > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {tags.length} tag dipilih:{" "}
+            {tags.map((t) => TAG_CONFIG[t].label).join(", ")}
+          </p>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">

@@ -5,7 +5,7 @@ import { fetchPostBySlug } from "@backend/queries/posts";
 import { supabase } from "@backend/supabase/client";
 import { getDeadlineStatus, formatDeadline } from "@frontend/lib/helpers";
 import { getPostStatus } from "@frontend/lib/getPostStatus";
-import { getCategoryConfig } from "@frontend/lib/getCategoryConfig";
+import { getCategoryConfig, getTagConfig } from "@frontend/lib/getCategoryConfig";
 import { StatusBadge } from "@frontend/components/StatusBadge";
 import { BookmarkButton } from "@frontend/components/BookmarkButton";
 import { Button } from "@frontend/components/ui/button";
@@ -75,17 +75,16 @@ function PostDetailPage() {
   const deadlineStatus = getDeadlineStatus(post.deadline);
   const postStatus = getPostStatus(post);
   const categoryConfig = getCategoryConfig(post.category);
+  const postTags = post.tags ?? [];
 
   const safeContent = post.content
     ? DOMPurify.sanitize(post.content, {
         ALLOWED_TAGS: [
           "p", "br", "strong", "b", "em", "i", "u", "s",
           "h1", "h2", "h3", "h4", "h5", "h6",
-          "ul", "ol", "li",
-          "a", "img",
+          "ul", "ol", "li", "a", "img",
           "table", "thead", "tbody", "tr", "th", "td",
-          "blockquote", "pre", "code",
-          "div", "span", "hr",
+          "blockquote", "pre", "code", "div", "span", "hr",
         ],
         ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "class", "style"],
       })
@@ -132,6 +131,23 @@ function PostDetailPage() {
           )}
           <BookmarkButton postId={post.id} variant="detail" />
         </div>
+
+        {/* Tags */}
+        {postTags.length > 0 && (
+          <div className="mb-4 flex flex-wrap gap-1.5">
+            {postTags.map((tag) => {
+              const tagConfig = getTagConfig(tag);
+              return (
+                <span
+                  key={tag}
+                  className={`rounded-full px-3 py-1 text-xs font-medium ${tagConfig.pillClass}`}
+                >
+                  {tagConfig.label}
+                </span>
+              );
+            })}
+          </div>
+        )}
 
         <h1 className="text-2xl font-bold text-foreground md:text-3xl">
           {post.title}

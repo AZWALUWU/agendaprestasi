@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Calendar, Clock, Megaphone } from "lucide-react";
 import type { Post } from "@backend/queries/posts";
 import { getPostStatus } from "@frontend/lib/getPostStatus";
-import { getCategoryConfig } from "@frontend/lib/getCategoryConfig";
+import { getCategoryConfig, getTagConfig } from "@frontend/lib/getCategoryConfig";
 import { formatDateID } from "@frontend/lib/formatDate";
 import { StatusBadge } from "@frontend/components/StatusBadge";
 import { BookmarkButton } from "@frontend/components/BookmarkButton";
@@ -47,6 +47,7 @@ export function PostCard({ post }: { post: Post }) {
   const postStatus = getPostStatus(post);
   const categoryConfig = getCategoryConfig(post.category);
   const hasAnyDate = post.open_date || post.deadline || post.announcement_date;
+  const postTags = post.tags ?? [];
 
   return (
     <Link
@@ -56,7 +57,11 @@ export function PostCard({ post }: { post: Post }) {
     >
       <div className="relative aspect-video overflow-hidden bg-secondary">
         {post.image_url ? (
-          <img src={post.image_url} alt={post.title} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+          <img
+            src={post.image_url}
+            alt={post.title}
+            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+          />
         ) : (
           <div className="flex h-full items-center justify-center text-muted-foreground">
             <Calendar className="h-10 w-10" />
@@ -67,18 +72,40 @@ export function PostCard({ post }: { post: Post }) {
           <StatusBadge status={postStatus} />
         </div>
       </div>
+
       <div className="flex flex-1 flex-col gap-2 p-4">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${categoryConfig.pillClass}`}>
             {categoryConfig.label}
           </span>
+          {postTags.slice(0, 2).map((tag) => {
+            const tagConfig = getTagConfig(tag);
+            return (
+              <span
+                key={tag}
+                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${tagConfig.pillClass}`}
+              >
+                {tagConfig.label}
+              </span>
+            );
+          })}
+          {postTags.length > 2 && (
+            <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-secondary text-muted-foreground">
+              +{postTags.length - 2}
+            </span>
+          )}
         </div>
+
         <h3 className="line-clamp-2 text-base font-semibold text-card-foreground group-hover:text-primary transition-colors">
           {post.title}
         </h3>
+
         {post.description && (
-          <p className="line-clamp-3 text-sm text-muted-foreground">{post.description}</p>
+          <p className="line-clamp-3 text-sm text-muted-foreground">
+            {post.description}
+          </p>
         )}
+
         {hasAnyDate && (
           <div className="mt-2 space-y-1.5 border-t pt-3">
             <DateRow icon={Calendar} label="Buka" date={post.open_date} tone="open" />
@@ -86,6 +113,7 @@ export function PostCard({ post }: { post: Post }) {
             <DateRow icon={Megaphone} label="Pengumuman" date={post.announcement_date} tone="announcement" />
           </div>
         )}
+
         <span className="mt-auto pt-2 text-sm font-medium text-primary">
           Lihat Detail →
         </span>

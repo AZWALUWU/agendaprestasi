@@ -67,58 +67,61 @@ export type Database = {
 
       posts: {
         Row: {
-          announcement_date: string | null
-          author_id: string | null
-          category: string
-          content: string | null
-          created_at: string
-          deadline: string | null
-          description: string | null
-          id: string
-          image_url: string | null
-          link: string | null
-          open_date: string | null
-          slug: string
-          status: string
-          title: string
-          updated_at: string
-        }
+        announcement_date: string | null
+    author_id: string | null
+    category: string
+    content: string | null
+    created_at: string
+    deadline: string | null
+    description: string | null
+    id: string
+    image_url: string | null
+    link: string | null
+    open_date: string | null
+    slug: string
+    status: string
+    tags: string[]        // ← tambah ini
+    title: string
+    updated_at: string
+  }
 
-        Insert: {
-          announcement_date?: string | null
-          author_id?: string | null
-          category: string
-          content?: string | null
-          created_at?: string
-          deadline?: string | null
-          description?: string | null
-          id?: string
-          image_url?: string | null
-          link?: string | null
-          open_date?: string | null
-          slug: string
-          status?: string
-          title: string
-          updated_at?: string
-        }
+  Insert: {
+    announcement_date?: string | null
+    author_id?: string | null
+    category: string
+    content?: string | null
+    created_at?: string
+    deadline?: string | null
+    description?: string | null
+    id?: string
+    image_url?: string | null
+    link?: string | null
+    open_date?: string | null
+    slug: string
+    status?: string
+    tags?: string[]       // ← tambah ini
+    title: string
+    updated_at?: string
+  }
 
-        Update: {
-          announcement_date?: string | null
-          author_id?: string | null
-          category?: string
-          content?: string | null
-          created_at?: string
-          deadline?: string | null
-          description?: string | null
-          id?: string
-          image_url?: string | null
-          link?: string | null
-          open_date?: string | null
-          slug?: string
-          status?: string
-          title?: string
-          updated_at?: string
-        }
+  Update: {
+    announcement_date?: string | null
+    author_id?: string | null
+    category?: string
+    content?: string | null
+    created_at?: string
+    deadline?: string | null
+    description?: string | null
+    id?: string
+    image_url?: string | null
+    link?: string | null
+    open_date?: string | null
+    slug?: string
+    status?: string
+    tags?: string[]       // ← tambah ini
+    title?: string
+    updated_at?: string
+  }
 
         Relationships: []
       }
