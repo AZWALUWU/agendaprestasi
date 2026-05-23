@@ -6,14 +6,26 @@ export type Post = Database["public"]["Tables"]["posts"]["Row"];
 export type PostInsert = Database["public"]["Tables"]["posts"]["Insert"];
 export type PostUpdate = Database["public"]["Tables"]["posts"]["Update"];
 
-// Kolom untuk list page — exclude content untuk hemat bandwidth
 const LIST_COLUMNS = "id, title, slug, description, category, open_date, deadline, announcement_date, link, image_url, author_id, status, created_at, updated_at" as const;
+
+async function invalidatePostsCache(): Promise<void> {
+  const secret = import.meta.env.VITE_CACHE_INVALIDATE_SECRET;
+  if (!secret) return;
+  try {
+    await fetch("/api/cache/invalidate", {
+      method: "POST",
+      headers: { "x-cache-secret": secret },
+    });
+  } catch {
+    // Cache invalidation gagal — TTL akan expire sendiri dalam 5 menit
+  }
+}
 
 // Public queries
 export async function fetchPublishedPosts(category?: string, search?: string) {
   let query = supabase
     .from("posts")
-    .select(LIST_COLUMNS)           // ← tidak ambil content
+    .select(LIST_COLUMNS)
     .eq("status", "published")
     .order("created_at", { ascending: false });
 
@@ -26,10 +38,9 @@ export async function fetchPublishedPosts(category?: string, search?: string) {
 }
 
 export async function fetchPostBySlug(slug: string) {
-  // Detail page — ambil semua kolom termasuk content
   const { data, error } = await supabase
     .from("posts")
-    .select("*")                    // ← full data hanya di detail page
+    .select("*")
     .eq("slug", slug)
     .single();
   if (error) throw error;
@@ -39,10 +50,9 @@ export async function fetchPostBySlug(slug: string) {
 // Admin queries
 export async function fetchAllPosts(userId: string) {
   await requireAdmin(userId);
-  // Admin list — exclude content juga, tidak perlu di tabel
   const { data, error } = await supabase
     .from("posts")
-    .select(LIST_COLUMNS)           // ← tidak ambil content
+    .select(LIST_COLUMNS)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data;
@@ -59,9 +69,9 @@ export async function createPost(post: PostInsert & { author_id?: string }, user
     .single();
 
   if (error) throw error;
-  if (!data) throw new Error(
-    "Post gagal dibuat — RLS policy memblokir insert. Pastikan session masih aktif."
-  );
+  if (!data) throw new Error("Post gagal dibuat — RLS policy memblokir insert. Pastikan session masih aktif.");
+
+  invalidatePostsCache();
   return data;
 }
 
@@ -75,9 +85,9 @@ export async function updatePost(id: string, post: PostUpdate, userId: string) {
     .single();
 
   if (error) throw error;
-  if (!data) throw new Error(
-    "Post gagal diperbarui — RLS policy memblokir update. Pastikan kamu adalah pemilik post ini."
-  );
+  if (!data) throw new Error("Post gagal diperbarui — RLS policy memblokir update. Pastikan kamu adalah pemilik post ini.");
+
+  invalidatePostsCache();
   return data;
 }
 
@@ -88,6 +98,8 @@ export async function deletePost(id: string, userId: string) {
     .delete()
     .eq("id", id);
   if (error) throw error;
+
+  invalidatePostsCache();
 }
 
 export async function togglePostStatus(id: string, currentStatus: string, userId: string) {

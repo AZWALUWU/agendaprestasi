@@ -8,5 +8,12 @@
   "assets": {
     "directory": "./dist/client",
     "binding": "ASSETS"
-  }
+  },
+
+  "kv_namespaces": [
+    {
+      "binding": "POSTS_CACHE",
+      "id": "7df0025f9f6f4ccfb5900a4a3cab214f"
+    }
+  ]
 }

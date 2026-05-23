@@ -1,9 +1,14 @@
 import server from "./dist/server/server.js";
 
-const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
-const RATE_LIMIT_MAX = 60; // max requests per window per IP
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 60;
 const clients = new Map<string, { count: number; start: number }>();
 let lastCleanup = Date.now();
+
+const CACHE_TTL_SECONDS = 300; // 5 menit
+const CACHE_KEYS = {
+  posts: (category?: string) => category ? `posts:${category}` : "posts:all",
+};
 
 function getIpFromRequest(request: Request) {
   const cfIp = request.headers.get("cf-connecting-ip");
@@ -13,17 +18,109 @@ function getIpFromRequest(request: Request) {
   return "unknown";
 }
 
+async function handleCacheApi(request: Request, env: any): Promise<Response | null> {
+  const url = new URL(request.url);
+
+  // GET /api/posts — serve dari KV cache
+  if (request.method === "GET" && url.pathname === "/api/posts") {
+    const category = url.searchParams.get("category") ?? undefined;
+    const search = url.searchParams.get("search");
+
+    // Jangan cache kalau ada search query — terlalu banyak kombinasi
+    if (search) return null;
+
+    const cacheKey = CACHE_KEYS.posts(category);
+
+    try {
+      const cached = await env.POSTS_CACHE.get(cacheKey);
+      if (cached) {
+        return new Response(cached, {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "X-Cache": "HIT",
+            "Cache-Control": `public, max-age=${CACHE_TTL_SECONDS}`,
+          },
+        });
+      }
+    } catch {
+      // KV error — fallback ke Supabase normal
+      return null;
+    }
+
+    // Cache miss — fetch dari Supabase via server handler
+    return null;
+  }
+
+  // POST /api/cache/invalidate — hapus semua cache posts
+  if (request.method === "POST" && url.pathname === "/api/cache/invalidate") {
+    // Validasi dengan secret key agar tidak sembarang orang bisa invalidate
+    const authHeader = request.headers.get("x-cache-secret");
+    if (authHeader !== env.CACHE_INVALIDATE_SECRET) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+
+    try {
+      // Hapus semua cache key yang ada
+      const keys = ["posts:all", "posts:scholarship", "posts:competition", "posts:event"];
+      await Promise.all(keys.map((key) => env.POSTS_CACHE.delete(key)));
+
+      return new Response(JSON.stringify({ success: true, cleared: keys }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (err) {
+      return new Response(JSON.stringify({ error: "Failed to invalidate cache" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }
+
+  return null;
+}
+
+async function populateCache(
+  request: Request,
+  response: Response,
+  env: any,
+  ctx: any
+): Promise<void> {
+  const url = new URL(request.url);
+
+  if (
+    request.method !== "GET" ||
+    url.pathname !== "/api/posts" ||
+    url.searchParams.get("search")
+  ) return;
+
+  const category = url.searchParams.get("category") ?? undefined;
+  const cacheKey = CACHE_KEYS.posts(category);
+
+  try {
+    const cloned = response.clone();
+    const body = await cloned.text();
+
+    // Simpan ke KV di background — tidak block response
+    ctx.waitUntil(
+      env.POSTS_CACHE.put(cacheKey, body, { expirationTtl: CACHE_TTL_SECONDS })
+    );
+  } catch {
+    // Gagal cache — tidak apa-apa, request tetap berhasil
+  }
+}
+
 export default {
   async fetch(request: Request, env: any, ctx: any) {
     const now = Date.now();
     try {
+      // Rate limiting
       const ip = getIpFromRequest(request);
       let entry = clients.get(ip);
       if (!entry) {
         entry = { count: 0, start: now };
         clients.set(ip, entry);
       }
-      // reset window
       if (now - entry.start > RATE_LIMIT_WINDOW_MS) {
         entry.count = 0;
         entry.start = now;
@@ -46,19 +143,41 @@ export default {
         });
       }
 
+      // Cek KV cache dulu untuk /api/posts
+      const cacheResponse = await handleCacheApi(request, env);
+      if (cacheResponse) {
+        const newHeaders = new Headers(cacheResponse.headers);
+        newHeaders.set("X-RateLimit-Limit", String(RATE_LIMIT_MAX));
+        newHeaders.set("X-RateLimit-Remaining", String(remaining));
+        newHeaders.set("X-RateLimit-Reset", String(resetSeconds));
+        return new Response(cacheResponse.body, {
+          status: cacheResponse.status,
+          headers: newHeaders,
+        });
+      }
+
+      // Forward ke server handler
       const res = await server.fetch(request, env, ctx);
 
-      // Propagate rate-limit headers
+      // Populate cache di background jika ini adalah /api/posts response sukses
+      if (res.status === 200) {
+        await populateCache(request, res, env, ctx);
+      }
+
       const newHeaders = new Headers(res.headers);
       newHeaders.set("X-RateLimit-Limit", String(RATE_LIMIT_MAX));
       newHeaders.set("X-RateLimit-Remaining", String(remaining));
       newHeaders.set("X-RateLimit-Reset", String(resetSeconds));
 
-      return new Response(res.body, { status: res.status, statusText: res.statusText, headers: newHeaders });
+      return new Response(res.body, {
+        status: res.status,
+        statusText: res.statusText,
+        headers: newHeaders,
+      });
+
     } catch (err) {
       return new Response("Internal Server Error", { status: 500 });
     } finally {
-      // periodic cleanup of stale entries to avoid memory growth
       if (now - lastCleanup > RATE_LIMIT_WINDOW_MS * 5) {
         for (const [key, val] of clients) {
           if (now - val.start > RATE_LIMIT_WINDOW_MS * 2) clients.delete(key);
