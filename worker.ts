@@ -1,13 +1,14 @@
+import * as Sentry from "@sentry/cloudflare";
 import server from "./dist/server/server.js";
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 60;
 const clients = new Map<string, { count: number; start: number }>();
 let lastCleanup = Date.now();
-
-const CACHE_TTL_SECONDS = 300; // 5 menit
+const CACHE_TTL_SECONDS = 300;
 const CACHE_KEYS = {
-  posts: (category?: string) => category ? `posts:${category}` : "posts:all",
+  posts: (category?: string) =>
+    category ? `posts:${category}` : "posts:all",
 };
 
 function getIpFromRequest(request: Request) {
@@ -18,16 +19,26 @@ function getIpFromRequest(request: Request) {
   return "unknown";
 }
 
-async function handleCacheApi(request: Request, env: any): Promise<Response | null> {
+async function handleCacheApi(
+  request: Request,
+  env: any
+): Promise<Response | null> {
   const url = new URL(request.url);
 
-  // GET /api/posts — serve dari KV cache
-  if (request.method === "GET" && url.pathname === "/api/posts") {
-    const category = url.searchParams.get("category") ?? undefined;
+  // GET /api/posts
+  if (
+    request.method === "GET" &&
+    url.pathname === "/api/posts"
+  ) {
+    const category =
+      url.searchParams.get("category") ?? undefined;
+
     const search = url.searchParams.get("search");
 
-    // Jangan cache kalau ada search query — terlalu banyak kombinasi
-    if (search) return null;
+    // Jangan cache search query
+    if (search) {
+      return null;
+    }
 
     const cacheKey = CACHE_KEYS.posts(category);
 
@@ -43,37 +54,71 @@ async function handleCacheApi(request: Request, env: any): Promise<Response | nu
           },
         });
       }
-    } catch {
-      // KV error — fallback ke Supabase normal
+    } catch (error) {
+      Sentry.captureException(error);
+
       return null;
     }
 
-    // Cache miss — fetch dari Supabase via server handler
     return null;
   }
 
-  // POST /api/cache/invalidate — hapus semua cache posts
-  if (request.method === "POST" && url.pathname === "/api/cache/invalidate") {
-    // Validasi dengan secret key agar tidak sembarang orang bisa invalidate
-    const authHeader = request.headers.get("x-cache-secret");
+  // POST /api/cache/invalidate
+  if (
+    request.method === "POST" &&
+    url.pathname === "/api/cache/invalidate"
+  ) {
+    const authHeader =
+      request.headers.get("x-cache-secret");
+
     if (authHeader !== env.CACHE_INVALIDATE_SECRET) {
-      return new Response("Unauthorized", { status: 401 });
+      return new Response("Unauthorized", {
+        status: 401,
+      });
     }
 
     try {
-      // Hapus semua cache key yang ada
-      const keys = ["posts:all", "posts:scholarship", "posts:competition", "posts:event"];
-      await Promise.all(keys.map((key) => env.POSTS_CACHE.delete(key)));
+      const keys = [
+        "posts:all",
+        "posts:scholarship",
+        "posts:competition",
+        "posts:event",
+      ];
 
-      return new Response(JSON.stringify({ success: true, cleared: keys }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
-    } catch (err) {
-      return new Response(JSON.stringify({ error: "Failed to invalidate cache" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      await Promise.all(
+        keys.map((key) =>
+          env.POSTS_CACHE.delete(key)
+        )
+      );
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          cleared: keys,
+        }),
+        {
+          status: 200,
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    } catch (error) {
+      Sentry.captureException(error);
+
+      return new Response(
+        JSON.stringify({
+          error: "Failed to invalidate cache",
+        }),
+        {
+          status: 500,
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
     }
   }
 
@@ -92,98 +137,195 @@ async function populateCache(
     request.method !== "GET" ||
     url.pathname !== "/api/posts" ||
     url.searchParams.get("search")
-  ) return;
+  ) {
+    return;
+  }
 
-  const category = url.searchParams.get("category") ?? undefined;
+  const category =
+    url.searchParams.get("category") ?? undefined;
+
   const cacheKey = CACHE_KEYS.posts(category);
 
   try {
     const cloned = response.clone();
+
     const body = await cloned.text();
 
-    // Simpan ke KV di background — tidak block response
     ctx.waitUntil(
-      env.POSTS_CACHE.put(cacheKey, body, { expirationTtl: CACHE_TTL_SECONDS })
+      env.POSTS_CACHE.put(cacheKey, body, {
+        expirationTtl: CACHE_TTL_SECONDS,
+      })
     );
-  } catch {
-    // Gagal cache — tidak apa-apa, request tetap berhasil
+  } catch (error) {
+    Sentry.captureException(error);
   }
 }
 
 export default {
   async fetch(request: Request, env: any, ctx: any) {
-    const now = Date.now();
-    try {
-      // Rate limiting
-      const ip = getIpFromRequest(request);
-      let entry = clients.get(ip);
-      if (!entry) {
-        entry = { count: 0, start: now };
-        clients.set(ip, entry);
-      }
-      if (now - entry.start > RATE_LIMIT_WINDOW_MS) {
-        entry.count = 0;
-        entry.start = now;
-      }
-      entry.count += 1;
+    return Sentry.withSentry(
+      {
+        dsn: env.SENTRY_DSN,
 
-      const remaining = Math.max(0, RATE_LIMIT_MAX - entry.count);
-      const resetSeconds = Math.ceil((entry.start + RATE_LIMIT_WINDOW_MS - now) / 1000);
+        tracesSampleRate: 1.0,
 
-      if (entry.count > RATE_LIMIT_MAX) {
-        return new Response("Too Many Requests", {
-          status: 429,
-          headers: {
-            "Content-Type": "text/plain",
-            "Retry-After": String(resetSeconds),
-            "X-RateLimit-Limit": String(RATE_LIMIT_MAX),
-            "X-RateLimit-Remaining": "0",
-            "X-RateLimit-Reset": String(resetSeconds),
-          },
-        });
-      }
+        environment:
+          env.ENVIRONMENT || "production",
+      },
 
-      // Cek KV cache dulu untuk /api/posts
-      const cacheResponse = await handleCacheApi(request, env);
-      if (cacheResponse) {
-        const newHeaders = new Headers(cacheResponse.headers);
-        newHeaders.set("X-RateLimit-Limit", String(RATE_LIMIT_MAX));
-        newHeaders.set("X-RateLimit-Remaining", String(remaining));
-        newHeaders.set("X-RateLimit-Reset", String(resetSeconds));
-        return new Response(cacheResponse.body, {
-          status: cacheResponse.status,
-          headers: newHeaders,
-        });
-      }
+      async () => {
+        const now = Date.now();
 
-      // Forward ke server handler
-      const res = await server.fetch(request, env, ctx);
+        try {
+          // RATE LIMIT
+          const ip = getIpFromRequest(request);
+          let entry = clients.get(ip);
 
-      // Populate cache di background jika ini adalah /api/posts response sukses
-      if (res.status === 200) {
-        await populateCache(request, res, env, ctx);
-      }
+          if (!entry) {
+            entry = {
+              count: 0,
+              start: now,
+            };
+            clients.set(ip, entry);
+          }
 
-      const newHeaders = new Headers(res.headers);
-      newHeaders.set("X-RateLimit-Limit", String(RATE_LIMIT_MAX));
-      newHeaders.set("X-RateLimit-Remaining", String(remaining));
-      newHeaders.set("X-RateLimit-Reset", String(resetSeconds));
+          if (
+            now - entry.start >
+            RATE_LIMIT_WINDOW_MS
+          ) {
+            entry.count = 0;
+            entry.start = now;
+          }
+          entry.count += 1;
 
-      return new Response(res.body, {
-        status: res.status,
-        statusText: res.statusText,
-        headers: newHeaders,
-      });
+          const remaining = Math.max(
+            0,
+            RATE_LIMIT_MAX - entry.count
+          );
 
-    } catch (err) {
-      return new Response("Internal Server Error", { status: 500 });
-    } finally {
-      if (now - lastCleanup > RATE_LIMIT_WINDOW_MS * 5) {
-        for (const [key, val] of clients) {
-          if (now - val.start > RATE_LIMIT_WINDOW_MS * 2) clients.delete(key);
+          const resetSeconds = Math.ceil(
+            (entry.start +
+              RATE_LIMIT_WINDOW_MS -
+              now) /
+              1000
+          );
+
+          if (entry.count > RATE_LIMIT_MAX) {
+            return new Response(
+              "Too Many Requests",
+              {
+                status: 429,
+                headers: {
+                  "Content-Type": "text/plain",
+                  "Retry-After": String(
+                    resetSeconds
+                  ),
+                  "X-RateLimit-Limit": String(
+                    RATE_LIMIT_MAX
+                  ),
+                  "X-RateLimit-Remaining": "0",
+                  "X-RateLimit-Reset": String(
+                    resetSeconds
+                  ),
+                },
+              }
+            );
+          }
+
+          // CACHE CHECK
+          const cacheResponse =
+            await handleCacheApi(request, env);
+
+          if (cacheResponse) {
+            const newHeaders = new Headers(
+              cacheResponse.headers
+            );
+            newHeaders.set(
+              "X-RateLimit-Limit",
+              String(RATE_LIMIT_MAX)
+            );
+            newHeaders.set(
+              "X-RateLimit-Remaining",
+              String(remaining)
+            );
+            newHeaders.set(
+              "X-RateLimit-Reset",
+              String(resetSeconds)
+            );
+            return new Response(
+              cacheResponse.body,
+              {
+                status: cacheResponse.status,
+                headers: newHeaders,
+              }
+            );
+          }
+
+          // FORWARD TO SERVER
+          const res = await server.fetch(
+            request,
+            env,
+            ctx
+          );
+
+          // POPULATE CACHE
+          if (res.status === 200) {
+            await populateCache(
+              request,
+              res,
+              env,
+              ctx
+            );
+          }
+
+          const newHeaders = new Headers(
+            res.headers
+          );
+          newHeaders.set(
+            "X-RateLimit-Limit",
+            String(RATE_LIMIT_MAX)
+          );
+          newHeaders.set(
+            "X-RateLimit-Remaining",
+            String(remaining)
+          );
+          newHeaders.set(
+            "X-RateLimit-Reset",
+            String(resetSeconds)
+          );
+          return new Response(res.body, {
+            status: res.status,
+            statusText: res.statusText,
+            headers: newHeaders,
+          });
+        } 
+        catch (error) {
+          Sentry.captureException(error);
+          return new Response(
+            "Internal Server Error",
+            {
+              status: 500,
+            }
+          );
+        } 
+        finally {
+          if (
+            now - lastCleanup >
+            RATE_LIMIT_WINDOW_MS * 5
+          ) {
+            for (const [key, val] of clients) {
+              if (
+                now - val.start >
+                RATE_LIMIT_WINDOW_MS * 2
+              ) {
+                clients.delete(key);
+              }
+            }
+
+            lastCleanup = now;
+          }
         }
-        lastCleanup = now;
       }
-    }
+    );
   },
 };
