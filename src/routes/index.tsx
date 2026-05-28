@@ -101,16 +101,6 @@ function HomePage() {
             Platform terlengkap untuk mencari beasiswa, kompetisi, dan event
             terbaru bagi pelajar dan mahasiswa Indonesia.
           </p>
-          <button
-            onClick={() => {
-              Sentry.captureException(
-                new Error("Manual captureException test")
-              );
-            }}
-          >
-            Test Sentry
-          </button>
-
           {/* Search bar */}
           <div className="relative mx-auto mt-8 max-w-lg">
             <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
