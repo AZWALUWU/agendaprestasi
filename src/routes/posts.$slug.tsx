@@ -13,6 +13,8 @@ import { Skeleton } from "@frontend/components/ui/skeleton";
 import { Navbar } from "@frontend/components/Navbar";
 import { useAuth } from "@frontend/hooks/use-auth";
 import DOMPurify from "dompurify";
+import { track } from "@/lib/analytics/events";
+import { EVENTS } from "@/lib/analytics/event-names";
 import { useEffect } from "react";
 import { posthog } from "@/lib/posthog/client";
 
@@ -83,6 +85,18 @@ function PostDetailPage() {
     if (!post) return;
 
     posthog.capture("post_viewed", {
+      post_id: post.id,
+      slug: post.slug,
+      title: post.title,
+      category: post.category,
+      tags: post.tags,
+    });
+  }, [post]);
+
+  useEffect(() => {
+    if (!post) return;
+
+    track(EVENTS.POST_VIEWED, {
       post_id: post.id,
       slug: post.slug,
       title: post.title,
@@ -187,10 +201,10 @@ function PostDetailPage() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => {
-                posthog.capture("external_link_clicked", {
+                track(EVENTS.EXTERNAL_LINK_CLICKED, {
                   post_id: post.id,
                   slug: post.slug,
-                  url: post.link,
+                  category: post.category,
                 });
               }}
             >

@@ -4,7 +4,6 @@ let initialized = false;
 
 export function initPostHog() {
   if (typeof window === "undefined") return;
-
   if (initialized) return;
 
   const key = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
@@ -17,25 +16,22 @@ export function initPostHog() {
 
   posthog.init(key, {
     api_host: host,
-
     capture_pageview: false,
-
     capture_pageleave: true,
-
     autocapture: true,
-
     person_profiles: "identified_only",
-
     persistence: "localStorage+cookie",
-
     session_recording: {
       maskAllInputs: false,
       maskInputOptions: {
         password: true,
       },
     },
-
     loaded: (posthogInstance) => {
+      posthogInstance.register({
+        environment: import.meta.env.MODE,
+      });
+
       if (import.meta.env.DEV) {
         posthogInstance.debug();
       }
@@ -45,8 +41,6 @@ export function initPostHog() {
   });
 
   initialized = true;
-
-  console.log("PostHog Initialized");
 }
 
 export { posthog };

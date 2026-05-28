@@ -8,6 +8,8 @@ import { useLogout } from "@frontend/hooks/useLogout";
 import { Button } from "@frontend/components/ui/button";
 import { UserAvatar } from "@frontend/components/ui/UserAvatar";
 import { UserDropdown } from "@frontend/components/ui/UserDropdown";
+import { track } from "@/lib/analytics/events";
+import { EVENTS } from "@/lib/analytics/event-names";
 
 const NAV_LINKS = [
   { to: "/", label: "Beranda", icon: Home, matchExact: true },
@@ -56,16 +58,26 @@ export function Navbar() {
   };
 
   const handleNavClick = (link: typeof NAV_LINKS[number]) => {
+    if (!user && link.to === "/calendar") {
+      track(EVENTS.CALENDAR_LOCKED_CLICKED);
+    }
+
     setMobileOpen(false);
 
     if ("matchParam" in link && link.matchParam) {
-      navigate({ to: "/", search: { category: link.matchParam } });
+      navigate({
+        to: "/",
+        search: { category: link.matchParam },
+      });
+
       return;
     }
+
     if (link.to === "/" && link.matchExact) {
       navigate({ to: "/" });
       return;
     }
+
     navigate({ to: link.to });
   };
 
@@ -107,8 +119,8 @@ export function Navbar() {
                     key={link.label}
                     to="/calendar"
                     className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${active
-                        ? "text-primary border-b-2 border-primary"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                      ? "text-primary border-b-2 border-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                       }`}
                   >
                     {link.label}
@@ -121,8 +133,8 @@ export function Navbar() {
                   key={link.label}
                   onClick={() => handleNavClick(link)}
                   className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${active
-                      ? "text-primary border-b-2 border-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    ? "text-primary border-b-2 border-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                     }`}
                 >
                   {link.label}
@@ -192,8 +204,8 @@ export function Navbar() {
             const Icon = link.icon;
 
             const commonClass = `flex items-center gap-3 border-b border-border/30 px-6 py-4 text-base font-medium transition-colors ${active
-                ? "bg-primary/5 text-primary border-l-[3px] border-l-primary"
-                : "text-foreground hover:bg-secondary"
+              ? "bg-primary/5 text-primary border-l-[3px] border-l-primary"
+              : "text-foreground hover:bg-secondary"
               }`;
 
             if (link.to === "/calendar") {

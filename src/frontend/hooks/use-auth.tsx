@@ -4,6 +4,7 @@ import { getUserRole, type UserRole } from "@backend/auth/auth";
 import type { User, Session } from "@supabase/supabase-js";
 import { posthog } from "@/lib/posthog/client";
 import { captureError } from "@/lib/sentry/capture";
+import * as Sentry from "@sentry/react";
 
 interface AuthContextType {
   user: User | null;
@@ -136,16 +137,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-  if (!session?.user) {
-    posthog.reset();
-    return;
-  }
+    if (!session?.user) {
+      posthog.reset();
+      return;
+    }
 
-  posthog.identify(session.user.id, {
-    email: session.user.email,
-    role,
-  });
+    posthog.identify(session.user.id, {
+      email: session.user.email,
+      role,
+    });
   }, [session, role]);
+
+  useEffect(() => {
+    if (!session?.user) {
+      Sentry.setUser(null);
+      return;
+    }
+
+    Sentry.setUser({
+      id: session.user.id,
+      email: session.user.email,
+    });
+  }, [session]);
 
   const user = session?.user ?? null;
   const isAdmin = role === "admin" || role === "super_admin";

@@ -2,6 +2,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@backend/supabase/client";
 import { useAuth } from "@frontend/hooks/use-auth";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics/events";
+import { EVENTS } from "@/lib/analytics/event-names";
+
 
 export function useBookmarkedIds() {
   const { user, loading: authLoading } = useAuth();
@@ -85,9 +88,25 @@ export function useToggleBookmark() {
       );
       return { previous };
     },
-    onSuccess: (_, { isBookmarked }) => {
-      toast.success(isBookmarked ? "Dihapus dari simpanan" : "Berhasil disimpan! 🔖");
-      queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
+    onSuccess: (_, variables) => {
+      track(
+        variables.isBookmarked
+          ? EVENTS.BOOKMARK_REMOVED
+          : EVENTS.BOOKMARK_ADDED,
+        {
+          post_id: variables.postId,
+        }
+      );
+
+      toast.success(
+        variables.isBookmarked
+          ? "Dihapus dari simpanan"
+          : "Berhasil disimpan! 🔖"
+      );
+
+      queryClient.invalidateQueries({
+        queryKey: ["bookmarks"],
+      });
     },
     onError: (error, _, context) => {
       if (context?.previous) {
@@ -98,3 +117,4 @@ export function useToggleBookmark() {
     },
   });
 }
+

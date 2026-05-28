@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, Sparkles, X, SlidersHorizontal, ChevronDown, ChevronUp } from "lucide-react";
 import { fetchPublishedPosts } from "@backend/queries/posts";
 import { Navbar } from "@frontend/components/Navbar";
@@ -8,9 +8,10 @@ import { PostCard } from "@frontend/components/PostCard";
 import { PostCardSkeleton } from "@frontend/components/PostCardSkeleton";
 import { useAuth } from "@frontend/hooks/use-auth";
 import { ALL_TAGS, TAG_CONFIG, type PostTag } from "@frontend/lib/getCategoryConfig";
-import { useEffect } from "react";
 import * as Sentry from "@sentry/react";
 import { posthog } from "@/lib/posthog/client";
+import { track } from "@/lib/analytics/events";
+import { EVENTS } from "@/lib/analytics/event-names";
 
 type HomeSearch = { category?: string };
 
@@ -52,9 +53,8 @@ function HomePage() {
   });
 
   const handleTagToggle = (tag: PostTag) => {
-    posthog.capture("tag_filter_toggled", {
+    track(EVENTS.TAG_FILTER_USED, {
       tag,
-      selected: !selectedTags.includes(tag),
     });
 
     setSelectedTags((prev) =>
@@ -66,6 +66,14 @@ function HomePage() {
 
   const clearAllTags = () => setSelectedTags([]);
   const activeFilterCount = selectedTags.length;
+
+  useEffect(() => {
+    if (!debouncedSearch) return;
+
+    track(EVENTS.SEARCH_USED, {
+      query: debouncedSearch,
+    });
+  }, [debouncedSearch]);
 
   useEffect(() => {
     if (!debouncedSearch) return;
@@ -94,14 +102,14 @@ function HomePage() {
             terbaru bagi pelajar dan mahasiswa Indonesia.
           </p>
           <button
-              onClick={() => {
-                Sentry.captureException(
-                  new Error("Manual captureException test")
-                );
-              }}
-            >
-              Test Sentry
-            </button>
+            onClick={() => {
+              Sentry.captureException(
+                new Error("Manual captureException test")
+              );
+            }}
+          >
+            Test Sentry
+          </button>
 
           {/* Search bar */}
           <div className="relative mx-auto mt-8 max-w-lg">
