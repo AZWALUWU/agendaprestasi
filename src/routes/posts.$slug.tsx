@@ -13,6 +13,8 @@ import { Skeleton } from "@frontend/components/ui/skeleton";
 import { Navbar } from "@frontend/components/Navbar";
 import { useAuth } from "@frontend/hooks/use-auth";
 import DOMPurify from "dompurify";
+import { useEffect } from "react";
+import { posthog } from "@/lib/posthog/client";
 
 export const Route = createFileRoute("/posts/$slug")({
   beforeLoad: async ({ location }) => {
@@ -77,17 +79,29 @@ function PostDetailPage() {
   const categoryConfig = getCategoryConfig(post.category);
   const postTags = post.tags ?? [];
 
+  useEffect(() => {
+    if (!post) return;
+
+    posthog.capture("post_viewed", {
+      post_id: post.id,
+      slug: post.slug,
+      title: post.title,
+      category: post.category,
+      tags: post.tags,
+    });
+  }, [post]);
+
   const safeContent = post.content
     ? DOMPurify.sanitize(post.content, {
-        ALLOWED_TAGS: [
-          "p", "br", "strong", "b", "em", "i", "u", "s",
-          "h1", "h2", "h3", "h4", "h5", "h6",
-          "ul", "ol", "li", "a", "img",
-          "table", "thead", "tbody", "tr", "th", "td",
-          "blockquote", "pre", "code", "div", "span", "hr",
-        ],
-        ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "class", "style"],
-      })
+      ALLOWED_TAGS: [
+        "p", "br", "strong", "b", "em", "i", "u", "s",
+        "h1", "h2", "h3", "h4", "h5", "h6",
+        "ul", "ol", "li", "a", "img",
+        "table", "thead", "tbody", "tr", "th", "td",
+        "blockquote", "pre", "code", "div", "span", "hr",
+      ],
+      ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "class", "style"],
+    })
     : null;
 
   return (
@@ -168,7 +182,18 @@ function PostDetailPage() {
 
         {post.link && (
           <div className="mt-8">
-            <a href={post.link} target="_blank" rel="noopener noreferrer">
+            <a
+              href={post.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => {
+                posthog.capture("external_link_clicked", {
+                  post_id: post.id,
+                  slug: post.slug,
+                  url: post.link,
+                });
+              }}
+            >
               <Button size="lg" className="gap-2">
                 Kunjungi Situs Resmi <ExternalLink className="h-4 w-4" />
               </Button>

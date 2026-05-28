@@ -8,6 +8,9 @@ import { PostCard } from "@frontend/components/PostCard";
 import { PostCardSkeleton } from "@frontend/components/PostCardSkeleton";
 import { useAuth } from "@frontend/hooks/use-auth";
 import { ALL_TAGS, TAG_CONFIG, type PostTag } from "@frontend/lib/getCategoryConfig";
+import { useEffect } from "react";
+import * as Sentry from "@sentry/react";
+import { posthog } from "@/lib/posthog/client";
 
 type HomeSearch = { category?: string };
 
@@ -49,13 +52,30 @@ function HomePage() {
   });
 
   const handleTagToggle = (tag: PostTag) => {
+    posthog.capture("tag_filter_toggled", {
+      tag,
+      selected: !selectedTags.includes(tag),
+    });
+
     setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+      prev.includes(tag)
+        ? prev.filter((t) => t !== tag)
+        : [...prev, tag]
     );
   };
 
   const clearAllTags = () => setSelectedTags([]);
   const activeFilterCount = selectedTags.length;
+
+  useEffect(() => {
+    if (!debouncedSearch) return;
+
+    posthog.capture("search_performed", {
+      query: debouncedSearch,
+      selected_tags: selectedTags,
+      category,
+    });
+  }, [debouncedSearch]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -73,6 +93,15 @@ function HomePage() {
             Platform terlengkap untuk mencari beasiswa, kompetisi, dan event
             terbaru bagi pelajar dan mahasiswa Indonesia.
           </p>
+          <button
+              onClick={() => {
+                Sentry.captureException(
+                  new Error("Manual captureException test")
+                );
+              }}
+            >
+              Test Sentry
+            </button>
 
           {/* Search bar */}
           <div className="relative mx-auto mt-8 max-w-lg">
@@ -125,12 +154,11 @@ function HomePage() {
                       <button
                         key={tag}
                         onClick={() => handleTagToggle(tag)}
-                        className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all border ${
-                          selected
-                            ? config.pillClass +
-                              " ring-2 ring-offset-1 ring-primary/40"
-                            : "bg-secondary text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
-                        }`}
+                        className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all border ${selected
+                          ? config.pillClass +
+                          " ring-2 ring-offset-1 ring-primary/40"
+                          : "bg-secondary text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
+                          }`}
                       >
                         {selected && <span className="mr-1">✓</span>}
                         {config.label}

@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { supabase } from "@backend/supabase/client";
 import { getUserRole, type UserRole } from "@backend/auth/auth";
 import type { User, Session } from "@supabase/supabase-js";
+import { posthog } from "@/lib/posthog/client";
+import { captureError } from "@/lib/sentry/capture";
 
 interface AuthContextType {
   user: User | null;
@@ -41,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!cancelled) setRole(userRole);
       } catch (err) {
         console.error("Error fetching role:", err);
+        captureError(err);
         if (!cancelled) setRole(null);
       } finally {
         roleLoadingRef.current = false;
@@ -68,7 +71,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (cancelled) return;
-        if (error) console.error("getSession error:", error);
+        if (error) {
+          console.error("getSession error:", error);
+          captureError(error);
+        }
 
         setSession(session);
 
@@ -77,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         console.error("Auth init error:", err);
+        captureError(err);
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -105,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         console.error("Visibility re-sync error:", err);
+        captureError(err);
       }
     };
 
@@ -126,6 +134,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(timeout);
     };
   }, []);
+
+  useEffect(() => {
+  if (!session?.user) {
+    posthog.reset();
+    return;
+  }
+
+  posthog.identify(session.user.id, {
+    email: session.user.email,
+    role,
+  });
+  }, [session, role]);
 
   const user = session?.user ?? null;
   const isAdmin = role === "admin" || role === "super_admin";

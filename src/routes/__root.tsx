@@ -1,23 +1,35 @@
+import * as React from "react";
 import * as Sentry from "@sentry/react";
+
 import {
   Outlet,
   Link,
   createRootRouteWithContext,
   HeadContent,
   Scripts,
+  useRouterState,
 } from "@tanstack/react-router";
+
 import { Toaster } from "sonner";
+
 import {
   AuthProvider,
   useAuth,
 } from "@frontend/hooks/use-auth";
+
 import {
   QueryClient,
   QueryClientProvider,
 } from "@tanstack/react-query";
+
 import { initSentry } from "@/lib/sentry/client";
+
+import { initPostHog, posthog } from "@/lib/posthog/client";
+
 import appCss from "../styles.css?url";
+
 initSentry();
+initPostHog();
 
 interface RouterContext {
   queryClient: QueryClient;
@@ -36,6 +48,7 @@ function NotFoundComponent() {
         <p className="mt-2 text-sm text-muted-foreground">
           Halaman yang kamu cari tidak ada atau sudah dipindahkan.
         </p>
+
         <div className="mt-6">
           <Link
             to="/"
@@ -54,70 +67,85 @@ export const Route =
     head: () => ({
       meta: [
         { charSet: "utf-8" },
+
         {
           name: "viewport",
           content: "width=device-width, initial-scale=1",
         },
+
         {
           title: "Agenda Prestasi — Beasiswa & Lomba",
         },
+
         {
           name: "description",
           content:
             "Temukan beasiswa dan lomba terbaru untuk mahasiswa dan pelajar Indonesia.",
         },
+
         {
           property: "og:title",
           content: "Agenda Prestasi — Beasiswa & Lomba",
         },
+
         {
           property: "og:description",
           content:
             "Platform pencarian beasiswa dan kompetisi terbaru.",
         },
+
         {
           property: "og:type",
           content: "website",
         },
+
         {
           property: "og:image",
           content: "/agendaprestasi.png",
         },
+
         {
           name: "twitter:card",
           content: "summary_large_image",
         },
+
         {
           name: "twitter:image",
           content: "/agendaprestasi.png",
         },
       ],
+
       links: [
         {
           rel: "stylesheet",
           href: appCss,
         },
+
         {
           rel: "icon",
           type: "image/x-icon",
           href: "/favicon.ico",
         },
+
         {
           rel: "icon",
           type: "image/svg+xml",
           href: "/favicon.svg",
         },
+
         {
           rel: "icon",
           type: "image/png",
           sizes: "96x96",
           href: "/favicon-96x96.png",
         },
+
         {
           rel: "apple-touch-icon",
           sizes: "180x180",
           href: "/apple-touch-icon.png",
         },
+
         {
           rel: "manifest",
           href: "/site.webmanifest",
@@ -142,6 +170,7 @@ function RootShell({
       <head>
         <HeadContent />
       </head>
+
       <body suppressHydrationWarning>
         {children}
         <Scripts />
@@ -150,16 +179,38 @@ function RootShell({
   );
 }
 
+function PostHogPageTracker() {
+  const pathname = useRouterState({
+    select: (s) => s.location.pathname,
+  });
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    posthog.capture("$pageview", {
+      pathname: window.location.pathname,
+      search: window.location.search,
+      title: document.title,
+      url: window.location.href,
+    });
+  }, [pathname]);
+
+  return null;
+}
+
 function AppGate() {
   const { loading } = useAuth();
 
   return (
     <>
+      <PostHogPageTracker />
+
       <div style={{ display: loading ? "none" : "block" }}>
         <Sentry.ErrorBoundary fallback={<div>Terjadi error aplikasi.</div>}>
           <Outlet />
         </Sentry.ErrorBoundary>
       </div>
+
       {loading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
           <div className="flex flex-col items-center gap-3">
@@ -171,6 +222,7 @@ function AppGate() {
           </div>
         </div>
       )}
+
       <Toaster position="top-right" richColors />
     </>
   );
@@ -178,6 +230,7 @@ function AppGate() {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
