@@ -9,23 +9,26 @@ import {
   Scripts,
   useRouterState,
 } from "@tanstack/react-router";
+
 import { Toaster } from "sonner";
+
 import {
   AuthProvider,
   useAuth,
 } from "@frontend/hooks/use-auth";
+
 import {
   QueryClient,
   QueryClientProvider,
 } from "@tanstack/react-query";
+
 import { initSentry } from "@/lib/sentry/client";
 import { initPostHog, posthog } from "@/lib/posthog/client";
+
 import { track } from "@/lib/analytics/events";
 import { EVENTS } from "@/lib/analytics/event-names";
-import appCss from "../styles.css?url";
 
-initSentry();
-initPostHog();
+import appCss from "../styles.css?url";
 
 interface RouterContext {
   queryClient: QueryClient;
@@ -231,6 +234,11 @@ function AppGate() {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  React.useEffect(() => {
+    initSentry();
+    initPostHog();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
