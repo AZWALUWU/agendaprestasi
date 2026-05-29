@@ -22,7 +22,10 @@ export const Route = createFileRoute("/posts/$slug")({
   beforeLoad: async ({ location }) => {
     const { data } = await supabase.auth.getSession();
     if (!data.session) {
-      throw redirect({ to: "/login", search: { redirect: location.href } });
+      throw redirect({
+        to: "/login",
+        search: { redirect: location.href },
+      });
     }
   },
   component: PostDetailPage,
@@ -47,6 +50,34 @@ function PostDetailPage() {
     gcTime: 15 * 60 * 1000,
   });
 
+  // =========================
+  // POST VIEW TRACKING
+  // =========================
+  useEffect(() => {
+    if (!post) return;
+    posthog.capture("post_viewed", {
+      post_id: post.id,
+      slug: post.slug,
+      title: post.title,
+      category: post.category,
+      tags: post.tags,
+    });
+  }, [post]);
+
+  useEffect(() => {
+    if (!post) return;
+    track(EVENTS.POST_VIEWED, {
+      post_id: post.id,
+      slug: post.slug,
+      title: post.title,
+      category: post.category,
+      tags: post.tags,
+    });
+  }, [post]);
+
+  // =========================
+  // LOADING & ERROR STATES
+  // =========================
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -68,80 +99,48 @@ function PostDetailPage() {
         <Navbar />
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <h2 className="text-xl font-semibold">Post tidak ditemukan</h2>
-          <Link to="/" className="mt-4 text-primary hover:underline">
-            Kembali ke Beranda
-          </Link>
+          <Link to="/" className="mt-4 text-primary hover:underline">Kembali ke Beranda</Link>
         </div>
       </div>
     );
   }
 
+  // =========================
+  // DERIVED VALUES & SANITIZE
+  // =========================
   const deadlineStatus = getDeadlineStatus(post.deadline);
   const postStatus = getPostStatus(post);
   const categoryConfig = getCategoryConfig(post.category);
   const postTags = post.tags ?? [];
 
-  useEffect(() => {
-    if (!post) return;
-
-    posthog.capture("post_viewed", {
-      post_id: post.id,
-      slug: post.slug,
-      title: post.title,
-      category: post.category,
-      tags: post.tags,
-    });
-  }, [post]);
-
-  useEffect(() => {
-    if (!post) return;
-
-    track(EVENTS.POST_VIEWED, {
-      post_id: post.id,
-      slug: post.slug,
-      title: post.title,
-      category: post.category,
-      tags: post.tags,
-    });
-  }, [post]);
-
   const safeContent = post.content
     ? DOMPurify.sanitize(post.content, {
-      ALLOWED_TAGS: [
-        "p", "br", "strong", "b", "em", "i", "u", "s",
-        "h1", "h2", "h3", "h4", "h5", "h6",
-        "ul", "ol", "li", "a", "img",
-        "table", "thead", "tbody", "tr", "th", "td",
-        "blockquote", "pre", "code", "div", "span", "hr",
-      ],
-      ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "class", "style"],
-    })
+        ALLOWED_TAGS: [
+          "p", "br", "strong", "b", "em", "i", "u", "s", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "a", 
+          "img", "table", "thead", "tbody", "tr", "th", "td", "blockquote", "pre", "code", "div", "span", "hr",
+        ],
+        ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "class", "style"],
+      })
     : null;
 
+  // =========================
+  // RENDER
+  // =========================
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+
       <article className="mx-auto max-w-3xl px-4 py-8">
-        <Link
-          to="/"
-          className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
+        <Link to="/" className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Kembali
         </Link>
 
-        {post.image_url && (
+        {post.image_url ? (
           <div className="relative mb-8 overflow-hidden rounded-xl">
-            <img
-              src={post.image_url}
-              alt={post.title}
-              className="w-full object-cover"
-              style={{ maxHeight: 400 }}
-            />
+            <img src={post.image_url} alt={post.title} className="w-full object-cover" style={{ maxHeight: 400 }} />
             <StatusBadge status={postStatus} className="absolute top-3 right-3" />
           </div>
-        )}
-
-        {!post.image_url && (
+        ) : (
           <div className="mb-4 flex justify-end">
             <StatusBadge status={postStatus} />
           </div>
@@ -151,25 +150,24 @@ function PostDetailPage() {
           <span className={`rounded-full px-3 py-1 text-xs font-medium ${categoryConfig.pillClass}`}>
             {categoryConfig.label}
           </span>
+
           {post.deadline && (
             <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${deadlineClasses[deadlineStatus]}`}>
               <Calendar className="h-3 w-3" />
               {formatDeadline(post.deadline)}
             </span>
           )}
+
           <BookmarkButton postId={post.id} variant="detail" />
         </div>
 
-        {/* Tags */}
+        {/* TAGS */}
         {postTags.length > 0 && (
           <div className="mb-4 flex flex-wrap gap-1.5">
             {postTags.map((tag) => {
               const tagConfig = getTagConfig(tag);
               return (
-                <span
-                  key={tag}
-                  className={`rounded-full px-3 py-1 text-xs font-medium ${tagConfig.pillClass}`}
-                >
+                <span key={tag} className={`rounded-full px-3 py-1 text-xs font-medium ${tagConfig.pillClass}`}>
                   {tagConfig.label}
                 </span>
               );
@@ -177,21 +175,12 @@ function PostDetailPage() {
           </div>
         )}
 
-        <h1 className="text-2xl font-bold text-foreground md:text-3xl">
-          {post.title}
-        </h1>
+        <h1 className="text-2xl font-bold text-foreground md:text-3xl">{post.title}</h1>
 
-        {post.description && (
-          <p className="mt-4 text-muted-foreground leading-relaxed">
-            {post.description}
-          </p>
-        )}
+        {post.description && <p className="mt-4 leading-relaxed text-muted-foreground">{post.description}</p>}
 
         {safeContent && (
-          <div
-            className="prose prose-neutral mt-8 max-w-none text-foreground"
-            dangerouslySetInnerHTML={{ __html: safeContent }}
-          />
+          <div className="prose prose-neutral mt-8 max-w-none text-foreground" dangerouslySetInnerHTML={{ __html: safeContent }} />
         )}
 
         {post.link && (
@@ -201,11 +190,8 @@ function PostDetailPage() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => {
-                track(EVENTS.EXTERNAL_LINK_CLICKED, {
-                  post_id: post.id,
-                  slug: post.slug,
-                  category: post.category,
-                });
+                track(EVENTS.EXTERNAL_LINK_CLICKED, { post_id: post.id, slug: post.slug, category: post.category });
+                posthog.capture("post_external_click", { post_id: post.id, slug: post.slug, category: post.category });
               }}
             >
               <Button size="lg" className="gap-2">
