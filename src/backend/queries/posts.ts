@@ -6,7 +6,8 @@ export type Post = Database["public"]["Tables"]["posts"]["Row"];
 export type PostInsert = Database["public"]["Tables"]["posts"]["Insert"];
 export type PostUpdate = Database["public"]["Tables"]["posts"]["Update"];
 
-const LIST_COLUMNS = "id, title, slug, description, category, tags, open_date, deadline, announcement_date, link, image_url, author_id, status, created_at, updated_at" as const;
+const LIST_COLUMNS =
+  "id, title, slug, description, category, tags, open_date, deadline, announcement_date, link, image_url, author_id, status, created_at, updated_at" as const;
 
 async function invalidatePostsCache(): Promise<void> {
   const secret = import.meta.env.VITE_CACHE_INVALIDATE_SECRET;
@@ -42,25 +43,43 @@ async function deleteImageFromStorage(imageUrl: string): Promise<void> {
 export async function fetchPublishedPosts(
   category?: string,
   search?: string,
-  tags?: string[]
+  tags?: string[],
+  page: number = 1,
+  limit: number = 12,
 ) {
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
   let query = supabase
     .from("posts")
-    .select(LIST_COLUMNS)
+    .select(LIST_COLUMNS, { count: "exact" })
     .eq("status", "published")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
-  if (category) query = query.eq("category", category);
-  if (search) query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+  if (category) {
+    query = query.eq("category", category);
+  }
 
-  // Filter tags — post harus punya SEMUA tag yang dipilih (AND logic)
+  if (search) {
+    query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+  }
+
   if (tags && tags.length > 0) {
     query = query.contains("tags", tags);
   }
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
+
   if (error) throw error;
-  return data;
+
+  return {
+    posts: data ?? [],
+    total: count ?? 0,
+    page,
+    limit,
+    totalPages: Math.ceil((count ?? 0) / limit),
+  };
 }
 
 export async function fetchPostBySlug(slug: string) {
@@ -86,7 +105,7 @@ export async function fetchAllPosts(userId: string) {
 
 export async function createPost(
   post: PostInsert & { author_id?: string },
-  userId: string
+  userId: string,
 ) {
   await requireAdmin(userId);
   const toInsert = { ...post, author_id: post.author_id ?? userId };
@@ -98,7 +117,10 @@ export async function createPost(
     .single();
 
   if (error) throw error;
-  if (!data) throw new Error("Post gagal dibuat — RLS policy memblokir insert. Pastikan session masih aktif.");
+  if (!data)
+    throw new Error(
+      "Post gagal dibuat — RLS policy memblokir insert. Pastikan session masih aktif.",
+    );
 
   invalidatePostsCache();
   return data;
@@ -123,7 +145,10 @@ export async function updatePost(id: string, post: PostUpdate, userId: string) {
     .single();
 
   if (error) throw error;
-  if (!data) throw new Error("Post gagal diperbarui — RLS policy memblokir update. Pastikan kamu adalah pemilik post ini.");
+  if (!data)
+    throw new Error(
+      "Post gagal diperbarui — RLS policy memblokir update. Pastikan kamu adalah pemilik post ini.",
+    );
 
   if (
     existingPost?.image_url &&
@@ -146,10 +171,7 @@ export async function deletePost(id: string, userId: string) {
     .eq("id", id)
     .single();
 
-  const { error } = await supabase
-    .from("posts")
-    .delete()
-    .eq("id", id);
+  const { error } = await supabase.from("posts").delete().eq("id", id);
 
   if (error) throw error;
 
@@ -163,7 +185,7 @@ export async function deletePost(id: string, userId: string) {
 export async function togglePostStatus(
   id: string,
   currentStatus: string,
-  userId: string
+  userId: string,
 ) {
   await requireAdmin(userId);
   const newStatus = currentStatus === "published" ? "draft" : "published";
