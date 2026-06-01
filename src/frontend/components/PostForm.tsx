@@ -5,7 +5,7 @@ import { Input } from "@frontend/components/ui/input";
 import { Label } from "@frontend/components/ui/label";
 import { Textarea } from "@frontend/components/ui/textarea";
 import { slugify } from "@frontend/lib/helpers";
-import { uploadPostImage, type Post, type PostInsert } from "@backend/queries/posts";
+import { type Post, type PostInsert } from "@backend/queries/posts";
 import {
   ALL_CATEGORIES,
   CATEGORY_CONFIG,
@@ -15,7 +15,7 @@ import {
   type PostTag,
 } from "@frontend/lib/getCategoryConfig";
 import { toast } from "sonner";
-import { Upload, Eye, Code } from "lucide-react";
+import { Eye, Code } from "lucide-react";
 import DOMPurify from "dompurify";
 
 interface PostFormProps {
@@ -41,8 +41,6 @@ export function PostForm({ initialData, onSubmit, loading }: PostFormProps) {
     initialData?.announcement_date ?? ""
   );
   const [link, setLink] = useState(initialData?.link ?? "");
-  const [imageUrl, setImageUrl] = useState(initialData?.image_url ?? "");
-  const [uploading, setUploading] = useState(false);
   const [autoSlug, setAutoSlug] = useState(!initialData);
   const [showPreview, setShowPreview] = useState(false);
 
@@ -56,26 +54,6 @@ export function PostForm({ initialData, onSubmit, loading }: PostFormProps) {
     setTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     );
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Ukuran file maksimal 5MB");
-      return;
-    }
-    setUploading(true);
-    try {
-      if (!user?.id) throw new Error("Not authenticated");
-      const url = await uploadPostImage(file, user.id);
-      setImageUrl(url);
-      toast.success("Gambar berhasil diupload");
-    } catch (err: any) {
-      toast.error(err.message || "Gagal upload gambar");
-    } finally {
-      setUploading(false);
-    }
   };
 
   const handleSubmit = (status: "draft" | "published") => {
@@ -92,7 +70,6 @@ export function PostForm({ initialData, onSubmit, loading }: PostFormProps) {
       deadline: deadline || null,
       announcement_date: announcementDate || null,
       link: link.trim() || null,
-      image_url: imageUrl || null,
       status,
     });
   };
@@ -238,30 +215,6 @@ export function PostForm({ initialData, onSubmit, loading }: PostFormProps) {
           onChange={(e) => setLink(e.target.value)}
           placeholder="https://..."
         />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Cover Image</Label>
-        <div className="flex items-center gap-4">
-          {imageUrl && (
-            <img
-              src={imageUrl}
-              alt="Cover"
-              className="h-20 w-32 rounded-lg object-cover border"
-            />
-          )}
-          <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors">
-            <Upload className="h-4 w-4" />
-            {uploading ? "Mengupload..." : "Upload Gambar"}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="hidden"
-              disabled={uploading}
-            />
-          </label>
-        </div>
       </div>
 
       <div className="space-y-2">

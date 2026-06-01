@@ -19,15 +19,6 @@ import { useEffect } from "react";
 import { posthog } from "@/lib/posthog/client";
 
 export const Route = createFileRoute("/posts/$slug")({
-  beforeLoad: async ({ location }) => {
-    const { data } = await supabase.auth.getSession();
-    if (!data.session) {
-      throw redirect({
-        to: "/login",
-        search: { redirect: location.href },
-      });
-    }
-  },
   component: PostDetailPage,
 });
 

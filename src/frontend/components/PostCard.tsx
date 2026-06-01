@@ -55,24 +55,7 @@ export function PostCard({ post }: { post: Post }) {
       params={{ slug: post.slug }}
       className="group relative flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-all hover:shadow-md"
     >
-      <div className="relative aspect-video overflow-hidden bg-secondary">
-        {post.image_url ? (
-          <img
-            src={post.image_url}
-            alt={post.title}
-            className="h-full w-full object-cover transition-transform group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-muted-foreground">
-            <Calendar className="h-10 w-10" />
-          </div>
-        )}
-        <div className="absolute top-3 right-3 flex items-center gap-1.5">
-          <BookmarkButton postId={post.id} />
-          <StatusBadge status={postStatus} />
-        </div>
-      </div>
-
+      <StatusBadge status={postStatus} className="mb-4 flex justify-center" />
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${categoryConfig.pillClass}`}>

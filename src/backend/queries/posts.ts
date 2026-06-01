@@ -7,39 +7,29 @@ export type PostInsert = Database["public"]["Tables"]["posts"]["Insert"];
 export type PostUpdate = Database["public"]["Tables"]["posts"]["Update"];
 
 const LIST_COLUMNS =
-  "id, title, slug, description, category, tags, open_date, deadline, announcement_date, link, image_url, author_id, status, created_at, updated_at" as const;
+  "id, title, slug, description, category, tags, open_date, deadline, announcement_date, link, author_id, status, created_at, updated_at" as const;
 
 async function invalidatePostsCache(): Promise<void> {
   const secret = import.meta.env.VITE_CACHE_INVALIDATE_SECRET;
+
   if (!secret) return;
+
   try {
     await fetch("/api/cache/invalidate", {
       method: "POST",
-      headers: { "x-cache-secret": secret },
+      headers: {
+        "x-cache-secret": secret,
+      },
     });
   } catch {
     // Cache invalidation gagal — TTL akan expire sendiri
   }
 }
 
-async function deleteImageFromStorage(imageUrl: string): Promise<void> {
-  try {
-    const url = new URL(imageUrl);
-    const pathParts = url.pathname.split("/");
-    const bucketIndex = pathParts.indexOf("post-images");
-    if (bucketIndex === -1) return;
-    const filePath = pathParts.slice(bucketIndex + 1).join("/");
-    if (!filePath) return;
-    const { error } = await supabase.storage
-      .from("post-images")
-      .remove([filePath]);
-    if (error) console.error("Failed to delete old image:", error.message);
-  } catch {
-    // Gagal hapus gambar lama — tidak critical
-  }
-}
+// ======================================================
+// PUBLIC QUERIES
+// ======================================================
 
-// Public queries
 export async function fetchPublishedPosts(
   category?: string,
   search?: string,
@@ -62,7 +52,9 @@ export async function fetchPublishedPosts(
   }
 
   if (search) {
-    query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+    query = query.or(
+      `title.ilike.%${search}%,description.ilike.%${search}%`,
+    );
   }
 
   if (tags && tags.length > 0) {
@@ -88,18 +80,26 @@ export async function fetchPostBySlug(slug: string) {
     .select("*")
     .eq("slug", slug)
     .single();
+
   if (error) throw error;
+
   return data;
 }
 
-// Admin queries
+// ======================================================
+// ADMIN QUERIES
+// ======================================================
+
 export async function fetchAllPosts(userId: string) {
   await requireAdmin(userId);
+
   const { data, error } = await supabase
     .from("posts")
     .select(LIST_COLUMNS)
     .order("created_at", { ascending: false });
+
   if (error) throw error;
+
   return data;
 }
 
@@ -108,7 +108,11 @@ export async function createPost(
   userId: string,
 ) {
   await requireAdmin(userId);
-  const toInsert = { ...post, author_id: post.author_id ?? userId };
+
+  const toInsert = {
+    ...post,
+    author_id: post.author_id ?? userId,
+  };
 
   const { data, error } = await supabase
     .from("posts")
@@ -117,25 +121,24 @@ export async function createPost(
     .single();
 
   if (error) throw error;
-  if (!data)
+
+  if (!data) {
     throw new Error(
       "Post gagal dibuat — RLS policy memblokir insert. Pastikan session masih aktif.",
     );
+  }
 
   invalidatePostsCache();
+
   return data;
 }
 
-export async function updatePost(id: string, post: PostUpdate, userId: string) {
+export async function updatePost(
+  id: string,
+  post: PostUpdate,
+  userId: string,
+) {
   await requireAdmin(userId);
-
-  const { data: existingPost, error: fetchError } = await supabase
-    .from("posts")
-    .select("image_url")
-    .eq("id", id)
-    .single();
-
-  if (fetchError) throw fetchError;
 
   const { data, error } = await supabase
     .from("posts")
@@ -145,39 +148,24 @@ export async function updatePost(id: string, post: PostUpdate, userId: string) {
     .single();
 
   if (error) throw error;
-  if (!data)
-    throw new Error(
-      "Post gagal diperbarui — RLS policy memblokir update. Pastikan kamu adalah pemilik post ini.",
-    );
-
-  if (
-    existingPost?.image_url &&
-    post.image_url !== undefined &&
-    post.image_url !== existingPost.image_url
-  ) {
-    await deleteImageFromStorage(existingPost.image_url);
-  }
 
   invalidatePostsCache();
+
   return data;
 }
 
-export async function deletePost(id: string, userId: string) {
+export async function deletePost(
+  id: string,
+  userId: string,
+) {
   await requireAdmin(userId);
 
-  const { data: existingPost } = await supabase
+  const { error } = await supabase
     .from("posts")
-    .select("image_url")
-    .eq("id", id)
-    .single();
-
-  const { error } = await supabase.from("posts").delete().eq("id", id);
+    .delete()
+    .eq("id", id);
 
   if (error) throw error;
-
-  if (existingPost?.image_url) {
-    await deleteImageFromStorage(existingPost.image_url);
-  }
 
   invalidatePostsCache();
 }
@@ -188,20 +176,15 @@ export async function togglePostStatus(
   userId: string,
 ) {
   await requireAdmin(userId);
-  const newStatus = currentStatus === "published" ? "draft" : "published";
-  return updatePost(id, { status: newStatus } as PostUpdate, userId);
-}
 
-export async function uploadPostImage(file: File, userId: string) {
-  await requireAdmin(userId);
-  const ext = file.name.split(".").pop();
-  const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-  const { error } = await supabase.storage
-    .from("post-images")
-    .upload(fileName, file);
-  if (error) throw error;
-  const { data: urlData } = supabase.storage
-    .from("post-images")
-    .getPublicUrl(fileName);
-  return urlData.publicUrl;
+  const newStatus =
+    currentStatus === "published"
+      ? "draft"
+      : "published";
+
+  return updatePost(
+    id,
+    { status: newStatus } as PostUpdate,
+    userId,
+  );
 }
