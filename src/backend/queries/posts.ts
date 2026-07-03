@@ -9,22 +9,9 @@ export type PostUpdate = Database["public"]["Tables"]["posts"]["Update"];
 const LIST_COLUMNS =
   "id, title, slug, description, category, tags, open_date, deadline, announcement_date, link, author_id, status, created_at, updated_at" as const;
 
-async function invalidatePostsCache(): Promise<void> {
-  const secret = import.meta.env.VITE_CACHE_INVALIDATE_SECRET;
-
-  if (!secret) return;
-
-  try {
-    await fetch("/api/cache/invalidate", {
-      method: "POST",
-      headers: {
-        "x-cache-secret": secret,
-      },
-    });
-  } catch {
-    // Cache invalidation gagal — TTL akan expire sendiri
-  }
-}
+// ponytail: client-side cache invalidation removed — the 5-minute KV TTL
+// is sufficient for a content platform. Re-add via server function if
+// instant propagation becomes necessary.
 
 // ======================================================
 // PUBLIC QUERIES
@@ -128,8 +115,6 @@ export async function createPost(
     );
   }
 
-  invalidatePostsCache();
-
   return data;
 }
 
@@ -149,8 +134,6 @@ export async function updatePost(
 
   if (error) throw error;
 
-  invalidatePostsCache();
-
   return data;
 }
 
@@ -166,8 +149,6 @@ export async function deletePost(
     .eq("id", id);
 
   if (error) throw error;
-
-  invalidatePostsCache();
 }
 
 export async function togglePostStatus(

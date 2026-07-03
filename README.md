@@ -3,8 +3,6 @@
 **Platform pencarian beasiswa, kompetisi, dan event terbaru untuk pelajar dan mahasiswa Indonesia.**  
 Dibangun dengan [TanStack Start](https://tanstack.com/start/latest) (React SSR) di atas [Cloudflare Workers](https://workers.cloudflare.com/) dengan backend [Supabase](https://supabase.com/).
 
-![OG Image](/agendaprestasi.png)
-
 ---
 
 ## Daftar Isi
@@ -249,11 +247,11 @@ can.manageRoles(role)        // hanya super_admin
 
 Sistem caching menggunakan **Cloudflare KV** dengan strategi:
 
-### Write-through Cache
+### Strategi
 
-1. **Read**: Worker intercept GET `/api/posts` → cek KV → hit return cached, miss lanjut ke SSR
-2. **Write**: Setelah admin create/update/delete post → Worker panggil `/api/cache/invalidate` → hapus 20 key cache (5 kategori × 4 halaman)
-3. **Skip cache**: Request dengan parameter `search` atau `tags` langsung ke SSR
+1. **Read**: Worker intercept GET `/api/posts` → cek KV → hit return cached, miss lanjut ke SSR lalu populasikan KV
+2. **Skip cache**: Request dengan parameter `search` atau `tags` langsung ke SSR
+3. **Expiry**: Cache berlaku 5 menit, expired otomatis — tidak ada invalidasi manual dari klien
 
 ### Detail Teknis
 
@@ -300,7 +298,6 @@ VITE_SENTRY_PROJECT=         # Sentry project name
 VITE_SENTRY_AUTH_TOKEN=      # Sentry auth token (build only)
 VITE_PUBLIC_POSTHOG_KEY=     # PostHog API key (opsional)
 VITE_PUBLIC_POSTHOG_HOST=    # PostHog host (opsional)
-VITE_CACHE_INVALIDATE_SECRET= # Secret untuk invalidate KV cache
 ```
 
 ### Development

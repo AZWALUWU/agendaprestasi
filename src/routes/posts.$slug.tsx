@@ -99,19 +99,21 @@ function PostDetailPage() {
   const categoryConfig = getCategoryConfig(post.category);
   const postTags = post.tags ?? [];
 
-  const safeContent = useMemo(
-    () =>
-      post.content
-        ? DOMPurify.sanitize(post.content, {
-            ALLOWED_TAGS: [
-              "p", "br", "strong", "b", "em", "i", "u", "s", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "a",
-              "img", "table", "thead", "tbody", "tr", "th", "td", "blockquote", "pre", "code", "div", "span", "hr",
-            ],
-            ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "class", "style"],
-          })
-        : null,
-    [post.content],
-  );
+  const safeContent = useMemo(() => {
+    if (!post.content) return null;
+    try {
+      return DOMPurify.sanitize(post.content, {
+        ALLOWED_TAGS: [
+          "p", "br", "strong", "b", "em", "i", "u", "s", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "a",
+          "img", "table", "thead", "tbody", "tr", "th", "td", "blockquote", "pre", "code", "div", "span", "hr",
+        ],
+        ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "class", "style"],
+      });
+    } catch {
+      // SSR: DOMPurify needs a DOM. Content is sanitized client-side after hydration.
+      return null;
+    }
+  }, [post.content]);
 
   // =========================
   // RENDER
