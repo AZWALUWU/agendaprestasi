@@ -111,6 +111,17 @@ function HomePage() {
 
   const clearAllTags = () => setSelectedTags([]);
 
+  const goToPage = (p: number) => {
+    navigate({
+      to: "/",
+      search: (prev) => ({
+        ...prev,
+        page: p,
+      }),
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const activeFilterCount = selectedTags.length;
 
   // RESET PAGE WHEN FILTER/SEARCH CHANGES
@@ -132,17 +143,9 @@ function HomePage() {
 
   useEffect(() => {
     if (!debouncedSearch) return;
-
     track(EVENTS.SEARCH_USED, {
       query: debouncedSearch,
     });
-  }, [debouncedSearch]);
-
-  // POSTHOG SEARCH TRACKING
-
-  useEffect(() => {
-    if (!debouncedSearch) return;
-
     posthog.capture("search_performed", {
       query: debouncedSearch,
       selected_tags: selectedTags,
@@ -334,21 +337,7 @@ function HomePage() {
 
                 <button
                   disabled={page <= 1}
-                  onClick={() => {
-                    navigate({
-                      to: "/",
-
-                      search: (prev) => ({
-                        ...prev,
-                        page: page - 1,
-                      }),
-                    });
-
-                    window.scrollTo({
-                      top: 0,
-                      behavior: "smooth",
-                    });
-                  }}
+                  onClick={() => goToPage(page - 1)}
                   className="inline-flex items-center gap-1 rounded-lg border px-3 py-2 text-sm disabled:opacity-50"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -371,21 +360,7 @@ function HomePage() {
                       return (
                         <button
                           key={pageNumber}
-                          onClick={() => {
-                            navigate({
-                              to: "/",
-
-                              search: (prev) => ({
-                                ...prev,
-                                page: pageNumber,
-                              }),
-                            });
-
-                            window.scrollTo({
-                              top: 0,
-                              behavior: "smooth",
-                            });
-                          }}
+                          onClick={() => goToPage(pageNumber)}
                           className={`h-10 w-10 rounded-lg border text-sm font-medium transition-colors ${
                             pageNumber === page
                               ? "bg-primary text-primary-foreground"
@@ -402,21 +377,7 @@ function HomePage() {
 
                 <button
                   disabled={page >= totalPages}
-                  onClick={() => {
-                    navigate({
-                      to: "/",
-
-                      search: (prev) => ({
-                        ...prev,
-                        page: page + 1,
-                      }),
-                    });
-
-                    window.scrollTo({
-                      top: 0,
-                      behavior: "smooth",
-                    });
-                  }}
+                  onClick={() => goToPage(page + 1)}
                   className="inline-flex items-center gap-1 rounded-lg border px-3 py-2 text-sm disabled:opacity-50"
                 >
                   Next

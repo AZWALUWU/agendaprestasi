@@ -1,8 +1,7 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ExternalLink, Calendar } from "lucide-react";
 import { fetchPostBySlug } from "@backend/queries/posts";
-import { supabase } from "@backend/supabase/client";
 import { getDeadlineStatus, formatDeadline } from "@frontend/lib/helpers";
 import { getPostStatus } from "@frontend/lib/getPostStatus";
 import { getCategoryConfig, getTagConfig } from "@frontend/lib/getCategoryConfig";
@@ -15,7 +14,7 @@ import { useAuth } from "@frontend/hooks/use-auth";
 import DOMPurify from "dompurify";
 import { track } from "@/lib/analytics/events";
 import { EVENTS } from "@/lib/analytics/event-names";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { posthog } from "@/lib/posthog/client";
 
 export const Route = createFileRoute("/posts/$slug")({
@@ -53,10 +52,6 @@ function PostDetailPage() {
       category: post.category,
       tags: post.tags,
     });
-  }, [post]);
-
-  useEffect(() => {
-    if (!post) return;
     track(EVENTS.POST_VIEWED, {
       post_id: post.id,
       slug: post.slug,
@@ -104,15 +99,19 @@ function PostDetailPage() {
   const categoryConfig = getCategoryConfig(post.category);
   const postTags = post.tags ?? [];
 
-  const safeContent = post.content
-    ? DOMPurify.sanitize(post.content, {
-        ALLOWED_TAGS: [
-          "p", "br", "strong", "b", "em", "i", "u", "s", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "a", 
-          "img", "table", "thead", "tbody", "tr", "th", "td", "blockquote", "pre", "code", "div", "span", "hr",
-        ],
-        ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "class", "style"],
-      })
-    : null;
+  const safeContent = useMemo(
+    () =>
+      post.content
+        ? DOMPurify.sanitize(post.content, {
+            ALLOWED_TAGS: [
+              "p", "br", "strong", "b", "em", "i", "u", "s", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "a",
+              "img", "table", "thead", "tbody", "tr", "th", "td", "blockquote", "pre", "code", "div", "span", "hr",
+            ],
+            ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "class", "style"],
+          })
+        : null,
+    [post.content],
+  );
 
   // =========================
   // RENDER

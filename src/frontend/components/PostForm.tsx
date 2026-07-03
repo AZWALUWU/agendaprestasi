@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@frontend/hooks/use-auth";
 import { Button } from "@frontend/components/ui/button";
 import { Input } from "@frontend/components/ui/input";
@@ -74,16 +74,20 @@ export function PostForm({ initialData, onSubmit, loading }: PostFormProps) {
     });
   };
 
-  const safePreview = DOMPurify.sanitize(content, {
-    ALLOWED_TAGS: [
-      "p", "br", "strong", "b", "em", "i", "u", "s",
-      "h1", "h2", "h3", "h4", "h5", "h6",
-      "ul", "ol", "li", "a", "img",
-      "table", "thead", "tbody", "tr", "th", "td",
-      "blockquote", "pre", "code", "div", "span", "hr",
-    ],
-    ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "class", "style"],
-  });
+  const safePreview = useMemo(
+    () =>
+      DOMPurify.sanitize(content, {
+        ALLOWED_TAGS: [
+          "p", "br", "strong", "b", "em", "i", "u", "s",
+          "h1", "h2", "h3", "h4", "h5", "h6",
+          "ul", "ol", "li", "a", "img",
+          "table", "thead", "tbody", "tr", "th", "td",
+          "blockquote", "pre", "code", "div", "span", "hr",
+        ],
+        ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "class", "style"],
+      }),
+    [content],
+  );
 
   return (
     <div className="space-y-6 rounded-xl border bg-card p-6 shadow-sm">

@@ -5,7 +5,6 @@ import { getPostStatus } from "@frontend/lib/getPostStatus";
 import { getCategoryConfig, getTagConfig } from "@frontend/lib/getCategoryConfig";
 import { formatDateID } from "@frontend/lib/formatDate";
 import { StatusBadge } from "@frontend/components/StatusBadge";
-import { BookmarkButton } from "@frontend/components/BookmarkButton";
 
 type DateTone = "open" | "deadline" | "announcement";
 
