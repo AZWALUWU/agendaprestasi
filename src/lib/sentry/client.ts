@@ -28,15 +28,13 @@ export function initSentry() {
       }),
     ],
 
-    tracesSampleRate:
-      import.meta.env.DEV
-        ? 1.0
-        : 0.2,
+    tracesSampleRate: parseFloat(
+      import.meta.env.VITE_SENTRY_SAMPLE_RATE ?? "0"
+    ),
 
-    replaysSessionSampleRate:
-      import.meta.env.DEV
-        ? 1.0
-        : 0.05,
+    replaysSessionSampleRate: parseFloat(
+      import.meta.env.VITE_SENTRY_REPLAY_SAMPLE_RATE ?? "0"
+    ),
 
     replaysOnErrorSampleRate: 1.0,
 
