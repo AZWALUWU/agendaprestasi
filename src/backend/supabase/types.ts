@@ -75,7 +75,6 @@ export type Database = {
     deadline: string | null
     description: string | null
     id: string
-    image_url: string | null
     link: string | null
     open_date: string | null
     slug: string
@@ -94,7 +93,6 @@ export type Database = {
     deadline?: string | null
     description?: string | null
     id?: string
-    image_url?: string | null
     link?: string | null
     open_date?: string | null
     slug: string
@@ -113,7 +111,6 @@ export type Database = {
     deadline?: string | null
     description?: string | null
     id?: string
-    image_url?: string | null
     link?: string | null
     open_date?: string | null
     slug?: string

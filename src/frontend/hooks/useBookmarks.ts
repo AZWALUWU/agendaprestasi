@@ -40,7 +40,7 @@ export function useBookmarkedPosts() {
           created_at,
           post:posts (
             id, title, slug, description, category,
-            open_date, deadline, image_url, status
+            open_date, deadline, status
           )
         `)
         .eq("user_id", user.id)

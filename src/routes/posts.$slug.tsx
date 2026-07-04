@@ -127,16 +127,9 @@ function PostDetailPage() {
           <ArrowLeft className="h-4 w-4" /> Kembali
         </Link>
 
-        {post.image_url ? (
-          <div className="relative mb-8 overflow-hidden rounded-xl">
-            <img src={post.image_url} alt={post.title} className="w-full object-cover" style={{ maxHeight: 400 }} />
-            <StatusBadge status={postStatus} className="absolute top-3 right-3" />
-          </div>
-        ) : (
-          <div className="mb-4 flex justify-end">
-            <StatusBadge status={postStatus} />
-          </div>
-        )}
+        <div className="mb-4 flex justify-end">
+          <StatusBadge status={postStatus} />
+        </div>
 
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <span className={`rounded-full px-3 py-1 text-xs font-medium ${categoryConfig.pillClass}`}>
