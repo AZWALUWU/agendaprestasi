@@ -14,7 +14,7 @@ const clients = new Map<
 
 let lastCleanup = Date.now();
 
-const CACHE_TTL_SECONDS = 300;
+const CACHE_TTL_SECONDS = 3600;
 
 const POSTS_PER_PAGE = 12;
 
