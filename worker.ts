@@ -200,49 +200,55 @@ export default Sentry.withSentry(
       const now = Date.now();
 
       try {
-        // RATE LIMIT
+        // RATE LIMIT — skip if DISABLE_RATE_LIMIT=1 for local load testing
 
-        const ip = getIpFromRequest(request);
+        let remaining = RATE_LIMIT_MAX;
 
-        let entry = clients.get(ip);
+        let resetSeconds = 0;
 
-        if (!entry) {
-          entry = {
-            count: 0,
-            start: now,
-          };
+        if (!env.DISABLE_RATE_LIMIT) {
+          const ip = getIpFromRequest(request);
 
-          clients.set(ip, entry);
-        }
+          let entry = clients.get(ip);
 
-        if (now - entry.start > RATE_LIMIT_WINDOW_MS) {
-          entry.count = 0;
-          entry.start = now;
-        }
+          if (!entry) {
+            entry = {
+              count: 0,
+              start: now,
+            };
 
-        entry.count += 1;
+            clients.set(ip, entry);
+          }
 
-        const remaining = Math.max(0, RATE_LIMIT_MAX - entry.count);
+          if (now - entry.start > RATE_LIMIT_WINDOW_MS) {
+            entry.count = 0;
+            entry.start = now;
+          }
 
-        const resetSeconds = Math.ceil(
-          (entry.start + RATE_LIMIT_WINDOW_MS - now) / 1000,
-        );
+          entry.count += 1;
 
-        if (entry.count > RATE_LIMIT_MAX) {
-          return new Response("Too Many Requests", {
-            status: 429,
-            headers: {
-              "Content-Type": "text/plain",
+          remaining = Math.max(0, RATE_LIMIT_MAX - entry.count);
 
-              "Retry-After": String(resetSeconds),
+          resetSeconds = Math.ceil(
+            (entry.start + RATE_LIMIT_WINDOW_MS - now) / 1000,
+          );
 
-              "X-RateLimit-Limit": String(RATE_LIMIT_MAX),
+          if (entry.count > RATE_LIMIT_MAX) {
+            return new Response("Too Many Requests", {
+              status: 429,
+              headers: {
+                "Content-Type": "text/plain",
 
-              "X-RateLimit-Remaining": "0",
+                "Retry-After": String(resetSeconds),
 
-              "X-RateLimit-Reset": String(resetSeconds),
-            },
-          });
+                "X-RateLimit-Limit": String(RATE_LIMIT_MAX),
+
+                "X-RateLimit-Remaining": "0",
+
+                "X-RateLimit-Reset": String(resetSeconds),
+              },
+            });
+          }
         }
 
         // CACHE
