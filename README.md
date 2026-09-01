@@ -1,18 +1,18 @@
-# Agenda Prestasi — Beasiswa, Lomba & Event
+# Agenda Prestasi — Scholarships, Competitions & Events
 
-**Platform pencarian beasiswa, kompetisi, dan event terbaru untuk pelajar dan mahasiswa Indonesia.**  
-Dibangun dengan [TanStack Start](https://tanstack.com/start/latest) (React SSR) di atas [Cloudflare Workers](https://workers.cloudflare.com/) dengan backend [Supabase](https://supabase.com/).
+**Platform for finding the latest scholarships, competitions, and events for Indonesian students.**  
+Built with [TanStack Start](https://tanstack.com/start/latest) (React SSR) on [Cloudflare Workers](https://workers.cloudflare.com/) with [Supabase](https://supabase.com/) backend.
 
 ---
 
-## Daftar Isi
+## Table of Contents
 
-- [Fitur](#fitur)
+- [Features](#features)
 - [Tech Stack](#tech-stack)
-- [Arsitektur](#arsitektur)
-- [Struktur Proyek](#struktur-proyek)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
 - [Database](#database)
-- [Sistem Role & Permission](#sistem-role--permission)
+- [Role & Permission System](#role--permission-system)
 - [Caching](#caching)
 - [Development](#development)
 - [Deployment](#deployment)
@@ -21,38 +21,38 @@ Dibangun dengan [TanStack Start](https://tanstack.com/start/latest) (React SSR) 
 
 ---
 
-## Fitur
+## Features
 
-### Frontend Public
+### Public Frontend
 
-| Fitur | Deskripsi |
-|-------|-----------|
-| **Beranda** | Halaman utama dengan daftar post (beasiswa/lomba/event) yang sudah dipublikasikan. Mendukung filter kategori, filter tag, pencarian teks, dan pagination. |
-| **Detail Post** | Halaman detail post dengan konten HTML yang sudah di-sanitize, status deadline (hijau/kuning/merah), badge status (akan datang/berlangsung/berakhir), tombol bookmark, dan link eksternal. |
-| **Kalender** | Kalender bulanan interaktif yang menampilkan tanggal buka, deadline, dan pengumuman. Mendukung filter kategori dan tipe tanggal. Dilengkapi daftar bulanan per kategori. |
-| **Profil** | Halaman profil pengguna dengan tab informasi akun dan tab bookmark (post yang disimpan). |
-| **Login** | Login via Google OAuth melalui Supabase. |
+| Feature | Description |
+|---------|-------------|
+| **Home** | Main page with published post listings (scholarships/competitions/events). Supports category filtering, tag filtering, text search, and pagination. |
+| **Post Detail** | Post detail page with sanitized HTML content, deadline status (green/yellow/red), status badge (upcoming/active/closed), bookmark button, and external links. |
+| **Calendar** | Interactive monthly calendar displaying open dates, deadlines, and announcements. Supports category and date type filtering. Includes a monthly list per category. |
+| **Profile** | User profile page with account info tab and bookmarks tab (saved posts). |
+| **Login** | Google OAuth login via Supabase. |
 
 ### Admin Dashboard
 
-| Fitur | Deskripsi |
-|-------|-----------|
-| **CRUD Post** | Buat, edit, hapus post. Mendukung status draft/published. |
-| **Manajemen Status** | Publish/unpublish post langsung dari tabel. |
-| **Role-based Access** | Super admin kelola semua post; admin biasa hanya post milik sendiri. |
+| Feature | Description |
+|---------|-------------|
+| **Post CRUD** | Create, edit, delete posts. Supports draft/published status. |
+| **Status Management** | Publish/unpublish posts directly from the table. |
+| **Role-based Access** | Super admin manages all posts; regular admin manages only their own. |
 
-### Fungsionalitas Lain
+### Other Functionalities
 
-| Fitur | Deskripsi |
-|-------|-----------|
-| **Bookmark** | Simpan post favorit. Optimistic update dengan rollback on error. |
-| **Deadline Tracking** | Visual badge: hijau (>30 hari), kuning (7-30 hari), merah (≤7 hari). |
-| **Caching** | Cloudflare KV cache untuk daftar post publik, TTL 5 menit. |
-| **Rate Limiting** | 60 request/menit per IP di sisi Worker. |
-| **Search & Filter** | Pencarian case-insensitive + filter kategori + filter multi-tag. |
-| **Pagination** | Client-side navigasi dengan page buttons. |
-| **PWA Ready** | Manifest, icon, dan apple-touch-icon sudah tersedia. |
-| **404 Page** | Custom 404 dengan link kembali ke beranda. |
+| Feature | Description |
+|---------|-------------|
+| **Bookmark** | Save favorite posts. Optimistic update with rollback on error. |
+| **Deadline Tracking** | Visual badges: green (>30 days), yellow (7-30 days), red (≤7 days). |
+| **Caching** | Cloudflare KV cache for public post listings, 5-minute TTL. |
+| **Rate Limiting** | 60 requests/minute per IP on the Worker side. |
+| **Search & Filter** | Case-insensitive search + category filter + multi-tag filter. |
+| **Pagination** | Client-side navigation with page buttons. |
+| **PWA Ready** | Manifest, icon, and apple-touch-icon are available. |
+| **404 Page** | Custom 404 with a link back to the homepage. |
 | **Error Boundary** | Sentry error boundary + custom error page. |
 
 ---
@@ -61,41 +61,41 @@ Dibangun dengan [TanStack Start](https://tanstack.com/start/latest) (React SSR) 
 
 ### Framework & Runtime
 
-| Teknologi | Kegunaan |
-|-----------|----------|
+| Technology | Purpose |
+|------------|---------|
 | **[TanStack Start](https://tanstack.com/start/latest)** | React SSR framework + file-based routing via TanStack Router |
 | **[Cloudflare Workers](https://workers.cloudflare.com/)** | Edge runtime, rate limiting, KV cache |
-| **[Supabase](https://supabase.com/)** | Database PostgreSQL, Auth (Google OAuth), RLS, Storage |
-| **[Vite](https://vitejs.dev/)** | Build tool dengan plugin TanStack, React, Tailwind, Sentry |
+| **[Supabase](https://supabase.com/)** | PostgreSQL database, Auth (Google OAuth), RLS, Storage |
+| **[Vite](https://vitejs.dev/)** | Build tool with TanStack, React, Tailwind, Sentry plugins |
 
 ### Frontend
 
-| Teknologi | Kegunaan |
-|-----------|----------|
+| Technology | Purpose |
+|------------|---------|
 | **[React 19](https://react.dev/)** | UI library |
-| **[TanStack Router](https://tanstack.com/router/latest)** | File-based routing dengan type safety |
+| **[TanStack Router](https://tanstack.com/router/latest)** | File-based routing with type safety |
 | **[TanStack Query](https://tanstack.com/query/latest)** | Server state management, caching, mutations |
 | **[Tailwind CSS v4](https://tailwindcss.com/)** | Utility-first CSS |
 | **[shadcn/ui](https://ui.shadcn.com/)** | UI components (Radix UI primitives + Tailwind) |
 | **[Lucide React](https://lucide.dev/)** | Icon library |
 | **[Recharts](https://recharts.org/)** | Chart library |
 | **[date-fns](https://date-fns.org/)** | Date utilities |
-| **[DOMPurify](https://github.com/cure53/DOMPurify)** | HTML sanitization (konten post) |
+| **[DOMPurify](https://github.com/cure53/DOMPurify)** | HTML sanitization (post content) |
 | **[React Hook Form](https://react-hook-form.com/)** + **[Zod](https://zod.dev/)** | Form handling & validation |
 | **[KaTeX](https://katex.org/)** | LaTeX rendering (LatexPreview component) |
 
 ### Monitoring & Analytics
 
-| Teknologi | Kegunaan |
-|-----------|----------|
+| Technology | Purpose |
+|------------|---------|
 | **[Sentry](https://sentry.io/)** | Error tracking (Cloudflare + React), source maps |
 | **[PostHog](https://posthog.com/)** | Product analytics, session recording, autocapture |
 
 ---
 
-## Arsitektur
+## Architecture
 
-Aplikasi berjalan sebagai **Cloudflare Worker** dengan SSR (Server-Side Rendering) via TanStack Start. Worker bertindak sebagai proxy yang menambahkan rate limiting dan KV caching sebelum meneruskan request ke server TanStack Start.
+The application runs as a **Cloudflare Worker** with SSR (Server-Side Rendering) via TanStack Start. The Worker acts as a proxy that adds rate limiting and KV caching before forwarding requests to the TanStack Start server.
 
 ```
 Request → Cloudflare Worker → Rate Limit Check → KV Cache Check → SSR (TanStack Start) → Supabase
@@ -103,26 +103,26 @@ Request → Cloudflare Worker → Rate Limit Check → KV Cache Check → SSR (T
                               └──── Cache Miss → Populate KV ──────────────────────────┘
 ```
 
-### Alur Data
+### Data Flow
 
-1. **Public browsing**: Worker cek KV cache → jika miss, SSR fetch dari Supabase → Worker simpan ke KV (5 menit)
-2. **Search/Filter**: Worker skip cache → SSR langsung query ke Supabase
-3. **Admin CRUD**: SSR langsung ke Supabase → Worker invalidate KV cache
+1. **Public browsing**: Worker checks KV cache → on miss, SSR fetches from Supabase → Worker stores in KV (5 minutes)
+2. **Search/Filter**: Worker skips cache → SSR queries Supabase directly
+3. **Admin CRUD**: SSR goes directly to Supabase → Worker invalidates KV cache
 4. **Auth**: Supabase Auth (Google OAuth) → session via Supabase client → role check via RLS + app-level permissions
 
 ---
 
-## Struktur Proyek
+## Project Structure
 
 ```
 src/
 ├── backend/
 │   ├── auth/
 │   │   ├── auth.ts              # Auth functions (signOut, getUserRole, checkIsAdmin)
-│   │   ├── admin-middleware.ts   # requireAdmin() — throws jika bukan admin
-│   │   └── permissions.ts       # can.* helpers (can.accessAdmin, editPost, deletePost, dll.)
+│   │   ├── admin-middleware.ts   # requireAdmin() — throws if not admin
+│   │   └── permissions.ts       # can.* helpers (can.accessAdmin, editPost, deletePost, etc.)
 │   ├── queries/
-│   │   └── posts.ts             # Semua query Supabase: fetchPublishedPosts, fetchPostBySlug, CRUD admin
+│   │   └── posts.ts             # All Supabase queries: fetchPublishedPosts, fetchPostBySlug, CRUD admin
 │   └── supabase/
 │       ├── client.ts            # Supabase browser client
 │       ├── client.server.ts     # Supabase server client
@@ -133,29 +133,29 @@ src/
 │   │   ├── admin/
 │   │   │   └── LatexPreview.tsx # LaTeX preview component
 │   │   ├── calendar/
-│   │   │   ├── MonthlyListItem.tsx   # Item daftar bulanan (kalender)
-│   │   │   └── MonthlyListSection.tsx # Section per kategori (kalender)
-│   │   ├── ui/                  # ~40 shadcn/ui components (button, card, dialog, dll.)
-│   │   ├── BookmarkButton.tsx   # Bookmark toggle dengan optimistic update
-│   │   ├── Navbar.tsx           # Navigation bar dengan role-aware menu
-│   │   ├── PostCard.tsx         # Card post untuk halaman utama
-│   │   ├── PostCardSkeleton.tsx # Loading skeleton untuk PostCard
-│   │   ├── PostForm.tsx         # Form create/edit post (admin)
-│   │   └── StatusBadge.tsx      # Badge status: Akan Datang / Berlangsung / Telah Berakhir
+│   │   │   ├── MonthlyListItem.tsx   # Monthly list item (calendar)
+│   │   │   └── MonthlyListSection.tsx # Category section (calendar)
+│   │   ├── ui/                  # ~40 shadcn/ui components (button, card, dialog, etc.)
+│   │   ├── BookmarkButton.tsx   # Bookmark toggle with optimistic update
+│   │   ├── Navbar.tsx           # Navigation bar with role-aware menu
+│   │   ├── PostCard.tsx         # Post card for the main page
+│   │   ├── PostCardSkeleton.tsx # Loading skeleton for PostCard
+│   │   ├── PostForm.tsx         # Post create/edit form (admin)
+│   │   └── StatusBadge.tsx      # Status badge: Upcoming / Active / Closed
 │   ├── hooks/
 │   │   ├── use-auth.tsx         # Auth context provider + useAuth hook
 │   │   ├── useBookmarks.ts      # Bookmark queries & mutations (useBookmarkedIds, useToggleBookmark)
-│   │   ├── useCalendarPosts.ts  # Query post untuk kalender
+│   │   ├── useCalendarPosts.ts  # Calendar post queries
 │   │   ├── useLogout.ts         # Logout handler
-│   │   ├── useUserRole.ts       # Query role user (super_admin / admin / public)
+│   │   ├── useUserRole.ts       # User role query (super_admin / admin / public)
 │   │   └── use-mobile.tsx       # Mobile detection hook
 │   └── lib/
 │       ├── formatDate.ts        # Date formatting helpers (Indonesia locale)
-│       ├── getAvatarColor.ts    # Warna avatar berdasarkan email
-│       ├── getCategoryConfig.ts # Single source of truth: kategori & tags (warna, label, class)
-│       ├── getInitials.ts       # Ambil inisial dari email
-│       ├── getPostStatus.ts     # Tentukan status post: upcoming / active / closed
-│       ├── helpers.ts           # Utility: slugify, getDeadlineStatus, formatDeadline
+│       ├── getAvatarColor.ts    # Avatar color based on email
+│       ├── getCategoryConfig.ts # Single source of truth: categories & tags (colors, labels, classes)
+│       ├── getInitials.ts       # Extract initials from email
+│       ├── getPostStatus.ts     # Determine post status: upcoming / active / closed
+│       ├── helpers.ts           # Utilities: slugify, getDeadlineStatus, formatDeadline
 │       ├── latex.tsx            # LaTeX rendering component
 │       └── utils.ts             # shadcn/ui utility (cn)
 │
@@ -172,15 +172,15 @@ src/
 │
 ├── routes/
 │   ├── __root.tsx               # Root layout: QueryClient, AuthProvider, Sentry, SEO head
-│   ├── index.tsx                # Beranda — daftar post + search + filter + pagination
-│   ├── login.tsx                # Halaman login (Google OAuth)
+│   ├── index.tsx                # Home — post listings + search + filter + pagination
+│   ├── login.tsx                # Login page (Google OAuth)
 │   ├── auth.callback.tsx        # OAuth callback handler
-│   ├── calendar.tsx             # Kalender bulanan interaktif
-│   ├── posts.$slug.tsx          # Detail post
-│   ├── profile.tsx              # Profil & bookmark pengguna
-│   ├── admin.tsx                # Admin layout (guard: cek role)
-│   ├── admin.index.tsx          # Admin dashboard — tabel post
-│   ├── admin.posts.new.tsx      # Admin — buat post baru
+│   ├── calendar.tsx             # Interactive monthly calendar
+│   ├── posts.$slug.tsx          # Post detail
+│   ├── profile.tsx              # User profile & bookmarks
+│   ├── admin.tsx                # Admin layout (guard: role check)
+│   ├── admin.index.tsx          # Admin dashboard — post table
+│   ├── admin.posts.new.tsx      # Admin — create new post
 │   └── admin.posts.$id.edit.tsx # Admin — edit post
 │
 ├── routeTree.gen.ts             # Auto-generated route tree (TanStack Router)
@@ -198,67 +198,67 @@ wrangler.jsonc                   # Wrangler config (KV binding, assets, compatib
 
 ## Database
 
-### Tabel
+### Tables
 
-| Tabel | Deskripsi |
-|-------|-----------|
-| `posts` | Konten utama: beasiswa, lomba, event. Status: `draft` / `published`. |
-| `user_roles` | Role user: `admin` / `super_admin`. Relasi 1:1 ke `auth.users`. |
-| `bookmarks` | Bookmark per user. Unique constraint `(user_id, post_id)`. |
-| `app_settings` | Key-value settings publik. |
+| Table | Description |
+|-------|-------------|
+| `posts` | Main content: scholarships, competitions, events. Status: `draft` / `published`. |
+| `user_roles` | User roles: `admin` / `super_admin`. 1:1 relation to `auth.users`. |
+| `bookmarks` | Bookmarks per user. Unique constraint `(user_id, post_id)`. |
+| `app_settings` | Public key-value settings. |
 
-### Schema Highlight (`supabase/migrations/20260523_final.sql`)
+### Schema Highlights (`supabase/migrations/20260523_final.sql`)
 
 - **Posts**: `id (UUID)`, `title`, `slug (unique)`, `description`, `content`, `category (scholarship|competition|event)`, `tags (TEXT[])`, `deadline`, `open_date`, `announcement_date`, `link`, `image_url`, `author_id`, `status (draft|published)`, `created_at`, `updated_at`
-- **Indexes**: Composite indexes untuk feed query `(status, category, created_at DESC)`, GIN index untuk `tags` dan `to_tsvector` search, + indexes untuk `author_id`, `created_at`
-- **RLS**: Policies ketat — public hanya baca post published, admin/super_admin punya akses sesuai role
-- **Bookmarks**: Row Level Security — user hanya bisa manage bookmark milik sendiri
-- **Storage**: Bucket `post-images` public read, authenticated write
+- **Indexes**: Composite indexes for feed queries `(status, category, created_at DESC)`, GIN index for `tags` and `to_tsvector` search, + indexes for `author_id`, `created_at`
+- **RLS**: Strict policies — public can only read published posts, admin/super_admin have access according to role
+- **Bookmarks**: Row Level Security — users can only manage their own bookmarks
+- **Storage**: `post-images` bucket with public read, authenticated write
 
 ---
 
-## Sistem Role & Permission
+## Role & Permission System
 
-### Role
+### Roles
 
-| Role | Akses Database (RLS) | Akses Aplikasi |
-|------|---------------------|----------------|
-| `super_admin` | Read/Write semua post + kelola `user_roles` | Akses penuh admin, bisa kelola post siapa pun, bisa kelola role |
-| `admin` | Insert post + update/delete post milik sendiri | Hanya bisa edit/hapus/publish post milik sendiri |
-| `public` | Read post published | Baca publik, bookmark |
+| Role | Database Access (RLS) | Application Access |
+|------|----------------------|-------------------|
+| `super_admin` | Read/Write all posts + manage `user_roles` | Full admin access, can manage any post, can manage roles |
+| `admin` | Insert posts + update/delete own posts | Can only edit/delete/publish own posts |
+| `public` | Read published posts | Public browsing, bookmarks |
 
 ### Permission Helpers (`src/backend/auth/permissions.ts`)
 
 ```ts
-can.accessAdmin(role)        // admin atau super_admin
+can.accessAdmin(role)        // admin or super_admin
 can.editPost(role, authorId, currentUserId)
 can.deletePost(role, authorId, currentUserId)
 can.publishPost(role, authorId, currentUserId)
-can.manageRoles(role)        // hanya super_admin
+can.manageRoles(role)        // super_admin only
 ```
 
 ### Admin Middleware (`src/backend/auth/admin-middleware.ts`)
 
-`requireAdmin(userId)` — throw jika user bukan admin/super_admin. Digunakan di semua query admin sisi server sebagai lapisan keamanan kedua di atas RLS.
+`requireAdmin(userId)` — throws if user is not admin/super_admin. Used in all server-side admin queries as a second security layer on top of RLS.
 
 ---
 
 ## Caching
 
-Sistem caching menggunakan **Cloudflare KV** dengan strategi:
+The caching system uses **Cloudflare KV** with the following strategy:
 
-### Strategi
+### Strategy
 
-1. **Read**: Worker intercept GET `/api/posts` → cek KV → hit return cached, miss lanjut ke SSR lalu populasikan KV
-2. **Skip cache**: Request dengan parameter `search` atau `tags` langsung ke SSR
-3. **Expiry**: Cache berlaku 5 menit, expired otomatis — tidak ada invalidasi manual dari klien
+1. **Read**: Worker intercepts GET `/api/posts` → checks KV → hit returns cached, miss proceeds to SSR then populates KV
+2. **Skip cache**: Requests with `search` or `tags` parameters go directly to SSR
+3. **Expiry**: Cache valid for 5 minutes, auto-expires — no manual invalidation from the client
 
-### Detail Teknis
+### Technical Details
 
-- **TTL**: 300 detik (5 menit)
+- **TTL**: 300 seconds (5 minutes)
 - **Cache key**: `posts:{category}:page:{page}:limit:{limit}`
-- **Invalidasi**: Hapus 20 key umum (category: all, scholarship, competition, event × page: 1-5)
-- **Auth**: Endpoint invalidasi dilindungi `x-cache-secret` header
+- **Invalidation**: Deletes 20 common keys (category: all, scholarship, competition, event × page: 1-5)
+- **Auth**: Invalidation endpoint protected by `x-cache-secret` header
 
 ---
 
@@ -267,10 +267,10 @@ Sistem caching menggunakan **Cloudflare KV** dengan strategi:
 ### Prerequisites
 
 - [Bun](https://bun.sh/) (runtime & package manager)
-- Akun [Supabase](https://supabase.com/) (proyek + Google OAuth)
-- Akun [Cloudflare](https://cloudflare.com/) (Worker + KV namespace)
-- Akun [Sentry](https://sentry.io/) (opsional, untuk error tracking)
-- Akun [PostHog](https://posthog.com/) (opsional, untuk analytics)
+- [Supabase](https://supabase.com/) account (project + Google OAuth)
+- [Cloudflare](https://cloudflare.com/) account (Worker + KV namespace)
+- [Sentry](https://sentry.io/) account (optional, for error tracking)
+- [PostHog](https://posthog.com/) account (optional, for analytics)
 
 ### Setup
 
@@ -284,7 +284,7 @@ bun install
 
 # Environment variables
 cp .env.example .env
-# Isi .env dengan kredensial Supabase, Sentry, PostHog, dll.
+# Fill in .env with Supabase, Sentry, PostHog credentials, etc.
 ```
 
 ### Environment Variables (`.env`)
@@ -292,12 +292,12 @@ cp .env.example .env
 ```env
 VITE_SUPABASE_URL=           # Supabase project URL
 VITE_SUPABASE_ANON_KEY=      # Supabase anon key
-VITE_SENTRY_DSN=             # Sentry DSN (opsional)
+VITE_SENTRY_DSN=             # Sentry DSN (optional)
 VITE_SENTRY_ORG=             # Sentry org slug
 VITE_SENTRY_PROJECT=         # Sentry project name
 VITE_SENTRY_AUTH_TOKEN=      # Sentry auth token (build only)
-VITE_PUBLIC_POSTHOG_KEY=     # PostHog API key (opsional)
-VITE_PUBLIC_POSTHOG_HOST=    # PostHog host (opsional)
+VITE_PUBLIC_POSTHOG_KEY=     # PostHog API key (optional)
+VITE_PUBLIC_POSTHOG_HOST=    # PostHog host (optional)
 ```
 
 ### Development
@@ -307,7 +307,7 @@ VITE_PUBLIC_POSTHOG_HOST=    # PostHog host (opsional)
 bun run dev
 ```
 
-Akses di `http://localhost:5173` (atau port yang ditentukan Vite).
+Access at `http://localhost:5173` (or the port specified by Vite).
 
 ### Build
 
@@ -315,7 +315,7 @@ Akses di `http://localhost:5173` (atau port yang ditentukan Vite).
 # Production build
 bun run build
 
-# Development build (source maps, dll.)
+# Development build (source maps, etc.)
 bun run build:dev
 ```
 
@@ -325,52 +325,52 @@ bun run build:dev
 
 ### Cloudflare Workers
 
-Proyek ini sudah dikonfigurasi untuk deploy ke Cloudflare Workers via Wrangler.
+This project is configured for deployment to Cloudflare Workers via Wrangler.
 
 ```bash
 # Build + Deploy
 ./deploy.sh
 
-# Atau manual
+# Or manually
 bun run build
 npx wrangler deploy
 ```
 
 ### Supabase Migration
 
-Jalankan file migrasi di Supabase SQL Editor:
+Run the migration file in the Supabase SQL Editor:
 
 ```sql
--- Buka supabase/migrations/20260523_final.sql
--- Copy seluruh isi → paste di Supabase SQL Editor → Run
+-- Open supabase/migrations/20260523_final.sql
+-- Copy entire content → paste in Supabase SQL Editor → Run
 ```
 
-### Setup Auth (Supabase)
+### Auth Setup (Supabase)
 
-1. Buka Supabase Dashboard → Authentication → Providers
+1. Open Supabase Dashboard → Authentication → Providers
 2. Enable Google provider
-3. Masukkan Google Client ID & Client Secret
+3. Enter Google Client ID & Client Secret
 4. Set redirect URL: `https://{domain}/auth/callback`
 
-### Setup KV Namespace
+### KV Namespace Setup
 
 ```bash
 npx wrangler kv:namespace create POSTS_CACHE
-# Update id di wrangler.jsonc dengan hasil create
+# Update the id in wrangler.jsonc with the created result
 ```
 
 ---
 
 ## Admin Guide
 
-Dokumentasi lengkap untuk admin: [docs/ADMIN-GUIDE.md](docs/ADMIN-GUIDE.md)
+Full documentation for admins: [docs/ADMIN-GUIDE.md](docs/ADMIN-GUIDE.md)
 
 ### Quick Reference
 
-1. **Tambah admin baru**: User harus login sekali via Google → INSERT di `user_roles`
-2. **Cabut akses**: DELETE dari `user_roles`
-3. **Upgrade ke super_admin**: UPDATE role di `user_roles`
-4. **SQL management**: Lihat [docs/admin-management.sql](docs/admin-management.sql)
+1. **Add new admin**: User must log in once via Google → INSERT into `user_roles`
+2. **Revoke access**: DELETE from `user_roles`
+3. **Upgrade to super_admin**: UPDATE role in `user_roles`
+4. **SQL management**: See [docs/admin-management.sql](docs/admin-management.sql)
 
 ---
 
@@ -378,46 +378,46 @@ Dokumentasi lengkap untuk admin: [docs/ADMIN-GUIDE.md](docs/ADMIN-GUIDE.md)
 
 ### Sentry (Error Tracking)
 
-- **Cloudflare**: Error tracking di Worker via `@sentry/cloudflare`
+- **Cloudflare**: Error tracking in Worker via `@sentry/cloudflare`
 - **React**: Error boundary, browser tracing, session replays (on error: 100%, sample: 5%)
-- **Filtered**: `ResizeObserver loop limit exceeded` tidak dikirim
-- **Context**: PostHog session ID dan distinct ID dilampirkan ke event Sentry
-- **Source maps**: Auto-upload via Sentry Vite Plugin saat build
+- **Filtered**: `ResizeObserver loop limit exceeded` is not sent
+- **Context**: PostHog session ID and distinct ID are attached to Sentry events
+- **Source maps**: Auto-upload via Sentry Vite Plugin during build
 
 ### PostHog (Analytics)
 
 - **Page views**: Custom `$pageview` capture via router
-- **Events tracked**: `search_performed`, `post_viewed`, `bookmark_added/removed`, `post_external_click`, `calendar_locked_clicked`, `tag_filter_used`, dll.
-- **Session recording**: Aktif dengan masking input password
-- **Person profiles**: Hanya untuk identified users (setelah login)
+- **Events tracked**: `search_performed`, `post_viewed`, `bookmark_added/removed`, `post_external_click`, `calendar_locked_clicked`, `tag_filter_used`, etc.
+- **Session recording**: Enabled with password input masking
+- **Person profiles**: Only for identified users (after login)
 - **Autocapture**: Enabled
-- **Debug mode**: Aktif otomatis di development
+- **Debug mode**: Automatically active in development
 
 ---
 
-## Keamanan
+## Security
 
-- **RLS (Row Level Security)**: Semua tabel di database punya policies ketat
+- **RLS (Row Level Security)**: All database tables have strict policies
 - **Dual auth**: Server-side `requireAdmin()` + client-side `can.*` helpers
-- **Rate limiting**: 60 req/min per IP di Worker
-- **HTML sanitization**: Semua konten post di-sanitize dengan DOMPurify sebelum di-render
-- **Environment variables**: Tidak ada secret di frontend (hanya anon key)
-- **CORS**: Tidak ada CORS issues karena SSR + Worker di domain yang sama
-- **Cache invalidation**: Endpoint dilindungi secret header
+- **Rate limiting**: 60 req/min per IP on the Worker
+- **HTML sanitization**: All post content is sanitized with DOMPurify before rendering
+- **Environment variables**: No secrets on the frontend (only anon key)
+- **CORS**: No CORS issues since SSR + Worker are on the same domain
+- **Cache invalidation**: Endpoint protected by secret header
 
 ---
 
 ## Contributing
 
-1. Branch dari `main`: `git checkout -b feat/nama-fitur`
-2. Commit dengan pesan deskriptif
-3. Buat PR ke `main`
+1. Branch from `main`: `git checkout -b feat/feature-name`
+2. Commit with descriptive messages
+3. Create a PR to `main`
 
 ### Code Conventions
 
-- **Component**: Functional Component + TypeScript
-- **Imports**: Gunakan path alias `@/`, `@backend/`, `@frontend/`
-- **Query naming**: `fetch*` untuk query publik, `use*` untuk hook, `handle*` untuk handler
-- **State**: TanStack Query untuk server state, React state untuk UI state
-- **CSS**: Tailwind utility classes, hindari CSS custom kecuali untuk animation/theme
-- **Kategori/Tag**: Jangan hardcode warna/label — selalu baca dari `getCategoryConfig`
+- **Components**: Functional Components + TypeScript
+- **Imports**: Use path aliases `@/`, `@backend/`, `@frontend/`
+- **Query naming**: `fetch*` for public queries, `use*` for hooks, `handle*` for handlers
+- **State**: TanStack Query for server state, React state for UI state
+- **CSS**: Tailwind utility classes, avoid custom CSS except for animations/theme
+- **Categories/Tags**: Do not hardcode colors/labels — always read from `getCategoryConfig`
